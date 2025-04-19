@@ -1,0 +1,758 @@
+[
+  {
+    "id": "chatgpt",
+    "name": "ChatGPT",
+    "category": "大規模言語モデル",
+    "subcategory": "会話型AI",
+    "description": "OpenAIが開発した高度な会話型AIモデル。自然な対話、文章生成、コード作成など多様なタスクに対応。",
+    "features": ["自然言語理解", "文章生成", "コード生成", "多言語対応", "画像理解"],
+    "useCases": ["ビジネスメール作成", "プログラミング支援", "学習資料作成", "顧客対応", "コンテンツ生成"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な会話機能（GPT-4o mini）", "制限付き利用"],
+      "paidPlans": [
+        {
+          "name": "Plus",
+          "price": "月額20米ドル",
+          "billingCycle": "月額",
+          "features": ["GPT-4o", "高速レスポンス", "プラグイン利用"]
+        }
+      ]
+    },
+    "officialUrl": "https://openai.com/chatgpt",
+    "apiAvailable": true,
+    "apiDocUrl": "https://platform.openai.com/docs/api-reference",
+    "pros": ["高度な言語理解", "多様なタスク対応", "使いやすいインターフェース", "定期的な機能更新"],
+    "cons": ["幻覚（誤情報）の可能性", "コンテキスト制限", "高コスト", "個人情報の取り扱いに注意"],
+    "alternatives": ["Claude", "Gemini", "Llama", "DeepSeek"],
+    "imageUrl": "https://example.com/chatgpt-logo.png",
+    "lastUpdated": "2025-04-15"
+  },
+  {
+    "id": "claude",
+    "name": "Claude 3",
+    "category": "大規模言語モデル",
+    "subcategory": "会話型AI",
+    "description": "Anthropicが開発した最新の会話型AI。高い正確性と安全性を重視した設計で、長文の処理や複雑な指示に強い。",
+    "features": ["高精度な情報処理", "長文コンテキスト", "画像理解", "安全性重視設計", "複雑な指示への対応"],
+    "useCases": ["複雑なプロジェクトのタスク整理", "教育コンテンツの作成", "倫理的な観点を考慮したコンテンツ生成", "ビジネス分析", "文書要約"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な会話機能（制限あり）"],
+      "paidPlans": [
+        {
+          "name": "Pro",
+          "price": "月額18米ドル",
+          "billingCycle": "月額",
+          "features": ["高速処理", "優先アクセス", "長文コンテキスト"]
+        }
+      ]
+    },
+    "officialUrl": "https://claude.ai",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.anthropic.com/claude/reference/getting-started-with-the-api",
+    "pros": ["高い正確性", "長文処理能力", "安全性", "透明性", "倫理的な応答"],
+    "cons": ["一部地域での利用制限", "創造性がやや低い場合も", "個人情報は学習される"],
+    "alternatives": ["ChatGPT", "Gemini", "Llama", "DeepSeek"],
+    "imageUrl": "https://example.com/claude3-logo.png",
+    "lastUpdated": "2025-04-10"
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "category": "大規模言語モデル",
+    "subcategory": "会話型AI",
+    "description": "中国発の高性能言語モデル。特に技術的な内容やコード生成に強みを持ち、複雑な問題解決能力に優れている。",
+    "features": ["高度なコード生成", "技術文書理解", "複雑な問題解決", "多言語対応"],
+    "useCases": ["大規模なコードベースの解析", "研究論文の要点抽出", "AIチャットボットの開発", "技術文書作成"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な会話機能", "制限付き利用"],
+      "paidPlans": [
+        {
+          "name": "Pro",
+          "price": "未公開",
+          "billingCycle": "月額",
+          "features": ["高度な機能", "優先アクセス", "拡張利用制限"]
+        }
+      ]
+    },
+    "officialUrl": "https://deepseek.com/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://platform.deepseek.com/docs",
+    "pros": ["コード生成の高精度", "技術的内容の理解力", "複雑な問題解決能力"],
+    "cons": ["一般的な話題での精度がやや劣る場合も", "英語以外の言語でのパフォーマンス差"],
+    "alternatives": ["ChatGPT", "Claude", "Gemini", "Llama"],
+    "imageUrl": "https://example.com/deepseek-logo.png",
+    "lastUpdated": "2025-04-05"
+  },
+  {
+    "id": "gemini",
+    "name": "Gemini",
+    "category": "大規模言語モデル",
+    "subcategory": "マルチモーダルAI",
+    "description": "Googleが開発した最新のマルチモーダルAI。テキスト、画像、音声、コードなど複数の形式のデータを理解・処理できる。",
+    "features": ["マルチモーダル理解", "高度な推論能力", "Googleサービス連携", "コード生成", "データ分析"],
+    "useCases": ["Google Docsでの音声要約生成", "Google Sheetsでのデータ可視化", "プロジェクト管理用のカスタムAIアシスタント作成", "研究支援", "クリエイティブ作業"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な機能（制限あり）"],
+      "paidPlans": [
+        {
+          "name": "Advanced",
+          "price": "月額20米ドル",
+          "billingCycle": "月額",
+          "features": ["高度な機能", "優先処理", "拡張利用制限"]
+        }
+      ]
+    },
+    "officialUrl": "https://gemini.google.com/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://ai.google.dev/docs",
+    "pros": ["マルチモーダル能力", "Googleサービス連携", "高度な推論", "データ分析能力"],
+    "cons": ["一部地域での利用制限", "特定分野での専門性に欠ける場合も"],
+    "alternatives": ["ChatGPT", "Claude", "Llama", "DeepSeek"],
+    "imageUrl": "https://example.com/gemini-logo.png",
+    "lastUpdated": "2025-04-12"
+  },
+  {
+    "id": "grok",
+    "name": "Grok",
+    "category": "大規模言語モデル",
+    "subcategory": "会話型AI",
+    "description": "Elon Musk率いるxAIが開発した会話型AI。リアルタイム情報へのアクセスとユーモアを特徴とする。",
+    "features": ["リアルタイム情報アクセス", "ユーモラスな応答", "X（旧Twitter）との連携", "率直な回答"],
+    "useCases": ["X（旧Twitter）上でのリアルタイム情報提供", "ユーモアを交えたコンテンツ作成", "ユーザーとのインタラクティブな会話", "時事問題の分析"],
+    "pricing": {
+      "hasFree": false,
+      "freeFeatures": [],
+      "paidPlans": [
+        {
+          "name": "X Premium+",
+          "price": "月額16米ドル",
+          "billingCycle": "月額",
+          "features": ["Grokへのフルアクセス", "X Premium機能", "優先回答"]
+        }
+      ]
+    },
+    "officialUrl": "https://grok.com",
+    "apiAvailable": false,
+    "apiDocUrl": "",
+    "pros": ["リアルタイム情報処理", "ユーモラスな応答", "率直な回答", "X連携"],
+    "cons": ["X Premium+サブスクリプション必須", "APIなし", "他プラットフォームとの連携なし"],
+    "alternatives": ["ChatGPT", "Claude", "Gemini", "Perplexity"],
+    "imageUrl": "https://example.com/grok-logo.png",
+    "lastUpdated": "2025-04-08"
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity",
+    "category": "大規模言語モデル",
+    "subcategory": "AIリサーチアシスタント",
+    "description": "AIを活用した次世代の検索・リサーチエンジン。質問に対して包括的な回答と情報源を提供し、複雑なリサーチをサポート。",
+    "features": ["自然言語検索", "情報源引用", "会話型インターフェース", "最新情報アクセス", "ファクトチェック"],
+    "useCases": ["学術研究", "市場調査", "ニュース分析", "一般的な情報収集", "ファクトチェック"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な検索機能", "制限付き利用"],
+      "paidPlans": [
+        {
+          "name": "Pro",
+          "price": "月額20米ドル",
+          "billingCycle": "月額",
+          "features": ["高度な検索", "無制限利用", "GPT-4連携", "画像アップロード"]
+        }
+      ]
+    },
+    "officialUrl": "https://www.perplexity.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.perplexity.ai/",
+    "pros": ["情報源の透明性", "最新情報へのアクセス", "使いやすさ", "出典付き回答"],
+    "cons": ["一部情報の精度", "深い専門分野での限界", "自身でファクトチェックが必要"],
+    "alternatives": ["You.com", "Bing AI", "Google Bard", "Kagi"],
+    "imageUrl": "https://example.com/perplexity-logo.png",
+    "lastUpdated": "2025-04-15"
+  },
+  {
+    "id": "catchy",
+    "name": "Catchy",
+    "category": "テキスト生成",
+    "subcategory": "ライティングアシスタント",
+    "description": "日本企業が開発したAIライティングアシスタントツール。キャッチコピーや記事作成など文字に関することを幅広くサポート。",
+    "features": ["キャッチコピー生成", "記事作成", "文章リライト", "アイデア出し", "日本語最適化"],
+    "useCases": ["マーケティング文章", "ブログ記事", "SNS投稿", "広告コピー", "商品説明"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本機能（月10クレジット）"],
+      "paidPlans": [
+        {
+          "name": "Starter",
+          "price": "月額3,000円～",
+          "billingCycle": "月額",
+          "features": ["拡張クレジット", "優先サポート"]
+        },
+        {
+          "name": "Pro",
+          "price": "月額9,800円",
+          "billingCycle": "月額",
+          "features": ["無制限利用", "高度な機能", "優先サポート"]
+        }
+      ]
+    },
+    "officialUrl": "https://catchy.jp/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.catchy.jp/",
+    "pros": ["日本語に最適化", "使いやすいインターフェース", "多様な文章生成", "国産ツール"],
+    "cons": ["無料プランの制限", "英語など他言語での精度差"],
+    "alternatives": ["Jasper", "Copy.ai", "SAKUBUN", "Wordtune"],
+    "imageUrl": "https://example.com/catchy-logo.png",
+    "lastUpdated": "2025-04-10"
+  },
+  {
+    "id": "jasper",
+    "name": "Jasper",
+    "category": "テキスト生成",
+    "subcategory": "コンテンツ作成",
+    "description": "多言語対応しているAIライティングツール。作成したいドキュメントに応じて、豊富なテンプレートから選べるため、用途に合わせたコンテンツを作成できる。",
+    "features": ["多言語対応", "豊富なテンプレート", "SEO最適化", "チーム連携", "ブランドボイス設定"],
+    "useCases": ["ブログ記事作成", "広告コピー", "SNS投稿", "製品説明", "メールマーケティング"],
+    "pricing": {
+      "hasFree": false,
+      "freeFeatures": [],
+      "paidPlans": [
+        {
+          "name": "Creator",
+          "price": "月額39米ドル",
+          "billingCycle": "月額",
+          "features": ["基本テンプレート", "月間50,000単語"]
+        },
+        {
+          "name": "Pro",
+          "price": "月額59米ドル",
+          "billingCycle": "月額",
+          "features": ["全テンプレート", "月間100,000単語", "SEO機能"]
+        }
+      ]
+    },
+    "officialUrl": "https://www.jasper.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://developers.jasper.ai/",
+    "pros": ["多言語対応", "使いやすいインターフェース", "多様なテンプレート", "SEO最適化"],
+    "cons": ["高コスト", "無料トライアル期間が短い", "自動課金に注意"],
+    "alternatives": ["Copy.ai", "Writesonic", "Rytr", "Catchy"],
+    "imageUrl": "https://example.com/jasper-logo.png",
+    "lastUpdated": "2025-04-05"
+  },
+  {
+    "id": "sakubun",
+    "name": "SAKUBUN",
+    "category": "テキスト生成",
+    "subcategory": "SEO記事作成",
+    "description": "SEO記事に強い記事を書くためのAIツール。Webコンテンツの作成を内製化したい場合に活用できる。初めて利用する際でも、直感的に操作することが可能。",
+    "features": ["SEO最適化", "記事構成提案", "キーワード分析", "日本語最適化"],
+    "useCases": ["ブログ記事", "Webコンテンツ", "SEO記事", "マーケティングコンテンツ"],
+    "pricing": {
+      "hasFree": false,
+      "freeFeatures": [],
+      "paidPlans": [
+        {
+          "name": "Personal",
+          "price": "月額9,800円",
+          "billingCycle": "月額",
+          "features": ["1ワークスペース", "基本機能", "単一ユーザー"]
+        }
+      ]
+    },
+    "officialUrl": "https://sakubun.jp/",
+    "apiAvailable": false,
+    "apiDocUrl": "",
+    "pros": ["SEO記事に特化", "日本語に最適化", "直感的な操作性", "内製化に最適"],
+    "cons": ["単一ユーザーのみ", "APIなし", "特定用途に限定"],
+    "alternatives": ["Catchy", "Jasper", "Copy.ai", "Wordtune"],
+    "imageUrl": "https://example.com/sakubun-logo.png",
+    "lastUpdated": "2025-03-20"
+  },
+  {
+    "id": "grammarly",
+    "name": "Grammarly",
+    "category": "テキスト生成",
+    "subcategory": "文章校正・改善",
+    "description": "AIを活用した文章校正・改善ツール。文法ミスの修正だけでなく、文章の明瞭さ、簡潔さ、トーンの調整など、文章全体の質を向上させる。",
+    "features": ["文法チェック", "スペルチェック", "文章改善提案", "トーン調整", "プラグイン連携"],
+    "useCases": ["ビジネス文書", "学術論文", "メール作成", "ブログ記事", "SNS投稿"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な文法チェック", "スペルチェック"],
+      "paidPlans": [
+        {
+          "name": "Premium",
+          "price": "月額30米ドル",
+          "billingCycle": "月額",
+          "features": ["高度な文法チェック", "文章改善提案", "トーン調整", "プラグイン連携"]
+        },
+        {
+          "name": "Business",
+          "price": "月額25米ドル/ユーザー",
+          "billingCycle": "月額",
+          "features": ["チーム管理", "ブランドトーン設定", "スタイルガイド"]
+        }
+      ]
+    },
+    "officialUrl": "https://www.grammarly.com/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://developer.grammarly.com/",
+    "pros": ["高精度な文法チェック", "多様なプラットフォーム対応", "使いやすいインターフェース", "リアルタイム提案"],
+    "cons": ["高コスト", "日本語など一部言語のサポート制限", "プライバシー懸念"],
+    "alternatives": ["ProWritingAid", "Hemingway Editor", "LanguageTool", "Wordtune"],
+    "imageUrl": "https://example.com/grammarly-logo.png",
+    "lastUpdated": "2025-04-01"
+  },
+  {
+    "id": "midjourney",
+    "name": "Midjourney",
+    "category": "画像生成",
+    "subcategory": "テキストから画像",
+    "description": "芸術的で美しい画像を生成するAIツール。直感的なDiscordインターフェースで簡単に利用可能。",
+    "features": ["高品質アート生成", "Discordインターフェース", "バリエーション作成", "アップスケーリング", "スタイル調整"],
+    "useCases": ["コンセプトアート", "イラスト", "製品ビジュアライゼーション", "インテリアデザイン", "マーケティング素材"],
+    "pricing": {
+      "hasFree": false,
+      "freeFeatures": [],
+      "paidPlans": [
+        {
+          "name": "Basic",
+          "price": "月額10米ドル",
+          "billingCycle": "月額",
+          "features": ["基本的な画像生成", "200分/月の利用時間"]
+        },
+        {
+          "name": "Standard",
+          "price": "月額30米ドル",
+          "billingCycle": "月額",
+          "features": ["高速生成", "無制限の画像生成", "プライベートモード"]
+        }
+      ]
+    },
+    "officialUrl": "https://www.midjourney.com/",
+    "apiAvailable": false,
+    "apiDocUrl": "",
+    "pros": ["直感的な操作", "高品質な芸術的出力", "活発なコミュニティ", "美意識にこだわる人向け"],
+    "cons": ["APIなし", "Discordのみでの利用", "完全な制御が難しい"],
+    "alternatives": ["Stable Diffusion", "DALL-E", "Leonardo.AI", "Adobe Firefly"],
+    "imageUrl": "https://example.com/midjourney-logo.png",
+    "lastUpdated": "2025-04-10"
+  },
+  {
+    "id": "stable-diffusion",
+    "name": "Stable Diffusion",
+    "category": "画像生成",
+    "subcategory": "テキストから画像",
+    "description": "オープンソースの高品質画像生成AIモデル。ローカル実行可能で、カスタマイズ性が高く、特定のスタイルに特化したモデルの訓練も可能。",
+    "features": ["オープンソース", "ローカル実行", "カスタムモデル訓練", "LoRA対応", "ControlNet対応"],
+    "useCases": ["特定のアートスタイルの再現", "プロジェクトに合わせた画像のカスタマイズ", "製品デザイン", "コンセプトアート"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["オープンソースモデル", "ローカル実行", "コミュニティモデル"],
+      "paidPlans": [
+        {
+          "name": "クラウドサービス（各種）",
+          "price": "サービスにより異なる",
+          "billingCycle": "月額または従量課金",
+          "features": ["高速処理", "クラウド実行", "高解像度出力"]
+        }
+      ]
+    },
+    "officialUrl": "https://stability.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://platform.stability.ai/docs/api-reference",
+    "pros": ["完全カスタマイズ可能", "オープンソース", "ローカル実行", "コミュニティサポート"],
+    "cons": ["高性能GPUが必要", "技術的知識が必要", "学習曲線が急"],
+    "alternatives": ["Midjourney", "DALL-E", "Leonardo.AI", "Adobe Firefly"],
+    "imageUrl": "https://example.com/stable-diffusion-logo.png",
+    "lastUpdated": "2025-04-15"
+  },
+  {
+    "id": "dalle",
+    "name": "DALL-E 3",
+    "category": "画像生成",
+    "subcategory": "テキストから画像",
+    "description": "OpenAIが開発した最新の画像生成AI。自然言語の詳細な説明から高品質な画像を生成。ChatGPTと統合されており、会話から直接画像生成が可能。",
+    "features": ["高精度な画像生成", "自然言語理解", "編集機能", "インペインティング", "ChatGPT連携"],
+    "useCases": ["マーケティング素材", "製品デザイン", "コンテンツ作成", "教育素材", "ソーシャルメディア"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な画像生成（制限あり）", "ChatGPT無料版での利用"],
+      "paidPlans": [
+        {
+          "name": "ChatGPT Plus",
+          "price": "月額20米ドル",
+          "billingCycle": "月額",
+          "features": ["優先アクセス", "高速生成", "高解像度出力"]
+        }
+      ]
+    },
+    "officialUrl": "https://openai.com/dall-e-3",
+    "apiAvailable": true,
+    "apiDocUrl": "https://platform.openai.com/docs/guides/images",
+    "pros": ["自然言語からの正確な生成", "高品質な出力", "使いやすいインターフェース", "ChatGPT連携"],
+    "cons": ["完全なカスタマイズ性に欠ける", "スタイルの制限", "APIコスト"],
+    "alternatives": ["Midjourney", "Stable Diffusion", "Leonardo.AI", "Adobe Firefly"],
+    "imageUrl": "https://example.com/dalle3-logo.png",
+    "lastUpdated": "2025-03-28"
+  },
+  {
+    "id": "leonardo-ai",
+    "name": "Leonardo.AI",
+    "category": "画像生成",
+    "subcategory": "テキストから画像",
+    "description": "クリエイター向けの高品質画像生成プラットフォーム。独自のモデルとカスタムトレーニング機能を提供し、一貫したスタイルの画像生成が可能。",
+    "features": ["カスタムモデルトレーニング", "バッチ生成", "画像編集", "高解像度出力", "ブラウザベース"],
+    "useCases": ["マーケティング素材", "製品デザイン", "コンテンツ制作", "ゲームアセット", "コンセプトアート"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な画像生成（月間制限あり）", "低解像度出力"],
+      "paidPlans": [
+        {
+          "name": "Pro",
+          "price": "月額19米ドル",
+          "billingCycle": "月額",
+          "features": ["高解像度出力", "優先処理", "拡張生成枠"]
+        },
+        {
+          "name": "Business",
+          "price": "月額48米ドル",
+          "billingCycle": "月額",
+          "features": ["商用利用", "チーム機能", "カスタムモデル"]
+        }
+      ]
+    },
+    "officialUrl": "https://leonardo.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.leonardo.ai/",
+    "pros": ["使いやすいインターフェース", "カスタムモデル", "高品質出力", "ブラウザベース"],
+    "cons": ["無料版の制限", "処理時間", "一部機能の学習曲線"],
+    "alternatives": ["Midjourney", "Stable Diffusion", "DALL-E", "Adobe Firefly"],
+    "imageUrl": "https://example.com/leonardo-ai-logo.png",
+    "lastUpdated": "2025-04-05"
+  },
+  {
+    "id": "notta",
+    "name": "Notta",
+    "category": "音声・動画関連",
+    "subcategory": "音声認識・文字起こし",
+    "description": "高精度の音声認識とAI要約機能によって、1時間の音声を約5分で文字起こしできる音声認識AIツール。",
+    "features": ["高精度音声認識", "AI要約", "複数言語対応", "録音データ共有", "リアルタイム文字起こし"],
+    "useCases": ["インタビュー文字起こし", "会議録作成", "講義録作成", "ポッドキャスト文字起こし"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本的な文字起こし（制限あり）"],
+      "paidPlans": [
+        {
+          "name": "プレミアム",
+          "price": "月額1,317円（年間払いの場合）",
+          "billingCycle": "月額/年額",
+          "features": ["無制限文字起こし", "優先処理", "高度な編集機能"]
+        },
+        {
+          "name": "ビジネス",
+          "price": "月額2,508円（年間払いの場合）",
+          "billingCycle": "月額/年額",
+          "features": ["チーム共有", "高度なセキュリティ", "優先サポート"]
+        }
+      ]
+    },
+    "officialUrl": "https://www.notta.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://developer.notta.ai/",
+    "pros": ["高精度な文字起こし", "使いやすいインターフェース", "複数言語対応", "AI要約機能"],
+    "cons": ["無料版の制限", "一部言語での精度差", "プランによる文字起こし時間制限"],
+    "alternatives": ["CLOVA Note", "Whisper", "Otter.ai", "Trint"],
+    "imageUrl": "https://example.com/notta-logo.png",
+    "lastUpdated": "2025-03-15"
+  },
+  {
+    "id": "clova-note",
+    "name": "CLOVA Note",
+    "category": "音声・動画関連",
+    "subcategory": "音声認識・文字起こし",
+    "description": "録音データを文字起こしできる音声認識AIツール。音声認識とは別にメモを追記できる「メモ機能」があり、録音後のデータの確認がスムーズに行える。",
+    "features": ["高精度音声認識", "メモ機能", "話者識別", "データ共有", "日本語最適化"],
+    "useCases": ["会議録作成", "インタビュー文字起こし", "講義録作成", "議事録作成"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["毎月300分まで無料で利用可能"],
+      "paidPlans": [
+        {
+          "name": "有料プラン",
+          "price": "データを学習させることで延長可能",
+          "billingCycle": "従量制",
+          "features": ["拡張利用時間", "優先処理", "高度な機能"]
+        }
+      ]
+    },
+    "officialUrl": "https://clovanote.naver.com/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://developers.naver.com/docs/clova/api/",
+    "pros": ["日本語に最適化", "メモ機能", "使いやすいインターフェース", "LINEアカウント連携"],
+    "cons": ["文字起こしは一度に最長180分まで", "一部機能の制限"],
+    "alternatives": ["Notta", "Whisper", "Otter.ai", "Amazon Transcribe"],
+    "imageUrl": "https://example.com/clova-note-logo.png",
+    "lastUpdated": "2025-03-10"
+  },
+  {
+    "id": "whisper",
+    "name": "Whisper",
+    "category": "音声・動画関連",
+    "subcategory": "音声認識",
+    "description": "OpenAIが開発した高精度な音声認識モデル。多言語対応で、ノイズの多い環境でも高い精度を維持。Webから集めた多言語の音声データをAIに学習させているため、精度の高い文字起こしを行うことが可能。",
+    "features": ["多言語対応", "ノイズ耐性", "オープンソース", "高精度文字起こし"],
+    "useCases": ["会議の文字起こし", "動画字幕作成", "音声コンテンツ分析", "言語学習"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["オープンソースモデル利用"],
+      "paidPlans": [
+        {
+          "name": "API",
+          "price": "1分の変換につき0.006米ドル",
+          "billingCycle": "従量課金",
+          "features": ["高速処理", "クラウド実行", "APIアクセス"]
+        }
+      ]
+    },
+    "officialUrl": "https://openai.com/research/whisper",
+    "apiAvailable": true,
+    "apiDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+    "pros": ["高精度", "多言語対応", "ノイズ耐性", "オープンソース", "APIアクセス"],
+    "cons": ["APIの利用料", "Google Colaboratoryなどが必要", "独自サービスへの組み込みが必要"],
+    "alternatives": ["Notta", "CLOVA Note", "Google Speech-to-Text", "Amazon Transcribe"],
+    "imageUrl": "https://example.com/whisper-logo.png",
+    "lastUpdated": "2025-02-20"
+  },
+  {
+    "id": "github-copilot",
+    "name": "GitHub Copilot",
+    "category": "コード・開発支援",
+    "subcategory": "プログラミング支援",
+    "description": "GitHubとOpenAIが共同開発したAIプログラミングアシスタント。コメントやコンテキストから適切なコードを提案し、開発効率を向上させる。",
+    "features": ["リアルタイムコード提案", "複数言語対応", "IDE統合", "コンテキスト理解", "コード補完"],
+    "useCases": ["ソフトウェア開発", "コード自動化", "プログラミング学習", "デバッグ支援"],
+    "pricing": {
+      "hasFree": false,
+      "freeFeatures": [],
+      "paidPlans": [
+        {
+          "name": "Individual",
+          "price": "月額10米ドル",
+          "billingCycle": "月額",
+          "features": ["無制限のコード提案", "複数IDE対応"]
+        },
+        {
+          "name": "Business",
+          "price": "月額19米ドル/ユーザー",
+          "billingCycle": "月額",
+          "features": ["企業向け管理機能", "セキュリティ機能", "コンプライアンス"]
+        }
+      ]
+    },
+    "officialUrl": "https://github.com/features/copilot",
+    "apiAvailable": false,
+    "apiDocUrl": "",
+    "pros": ["生産性向上", "学習支援", "複数言語対応", "IDE統合", "コンテキスト理解"],
+    "cons": ["サブスクリプション必須", "時に不正確な提案", "プライバシー懸念"],
+    "alternatives": ["Amazon CodeWhisperer", "Tabnine", "Codeium", "Cursor"],
+    "imageUrl": "https://example.com/github-copilot-logo.png",
+    "lastUpdated": "2025-04-01"
+  },
+  {
+    "id": "amazon-codewhisperer",
+    "name": "Amazon CodeWhisperer",
+    "category": "コード・開発支援",
+    "subcategory": "プログラミング支援",
+    "description": "AWSが開発したAIコード生成ツール。コメントやコードから次のコードを予測し、開発者の生産性を向上させる。AWSサービスとの連携が強く、クラウドアプリケーション開発に最適。",
+    "features": ["コード補完", "セキュリティスキャン", "AWS最適化", "複数言語対応", "IDE統合"],
+    "useCases": ["AWS開発", "クラウドアプリケーション", "安全なプログラミング", "コード最適化"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["個人利用", "基本機能"],
+      "paidPlans": [
+        {
+          "name": "Professional",
+          "price": "月額19米ドル/ユーザー",
+          "billingCycle": "月額",
+          "features": ["高度なセキュリティ", "企業管理", "カスタマイズ"]
+        }
+      ]
+    },
+    "officialUrl": "https://aws.amazon.com/codewhisperer/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.aws.amazon.com/codewhisperer/",
+    "pros": ["AWSとの強力な連携", "セキュリティ重視", "無料個人プラン", "多言語対応"],
+    "cons": ["AWS以外の環境では機能制限", "GitHub Copilotと比較して提案精度に差がある場合も"],
+    "alternatives": ["GitHub Copilot", "Tabnine", "Codeium", "Cursor"],
+    "imageUrl": "https://example.com/codewhisperer-logo.png",
+    "lastUpdated": "2025-03-20"
+  },
+  {
+    "id": "notion-ai",
+    "name": "Notion AI",
+    "category": "生産性・ワークフロー",
+    "subcategory": "ドキュメント作成支援",
+    "description": "Notionに統合されたAIアシスタント。文章の作成、編集、要約、翻訳などをサポートし、ドキュメント作成の効率を向上。",
+    "features": ["文章生成", "要約", "翻訳", "書き直し", "Notion統合", "会議ノートの自動要約"],
+    "useCases": ["ドキュメント作成", "会議記録", "プロジェクト管理", "アイデア整理", "タスクの自動整理"],
+    "pricing": {
+      "hasFree": false,
+      "freeFeatures": [],
+      "paidPlans": [
+        {
+          "name": "AI Add-on",
+          "price": "月額10米ドル/ユーザー",
+          "billingCycle": "月額",
+          "features": ["全AI機能", "無制限利用"]
+        }
+      ]
+    },
+    "officialUrl": "https://www.notion.so/product/ai",
+    "apiAvailable": false,
+    "apiDocUrl": "",
+    "pros": ["シームレスな統合", "使いやすさ", "多機能", "ワークフロー効率化"],
+    "cons": ["Notionユーザーのみ", "独立利用不可", "カスタマイズ制限", "月額制限"],
+    "alternatives": ["Craft AI", "Mem.ai", "Otter.ai", "Coda AI"],
+    "imageUrl": "https://example.com/notion-ai-logo.png",
+    "lastUpdated": "2025-03-15"
+  },
+  {
+    "id": "miro-ai",
+    "name": "Miro AI",
+    "category": "生産性・ワークフロー",
+    "subcategory": "オンラインホワイトボード",
+    "description": "Miroが提供するクラウド型のオンラインホワイトボードにAI機能を統合。マインドマッピングやダイアグラムによってアイデアを広げ、チーム連携を強化。",
+    "features": ["リアルタイムコラボレーション", "豊富なテンプレート", "マインドマッピング", "ダイアグラム作成", "AI提案"],
+    "useCases": ["チームブレインストーミング", "プロジェクト計画", "ワークフロー設計", "アイデア可視化"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本機能", "制限付き利用"],
+      "paidPlans": [
+        {
+          "name": "Starter",
+          "price": "月額8米ドル（年間払いの場合）",
+          "billingCycle": "月額/年額",
+          "features": ["拡張機能", "無制限ボード", "高度な共有"]
+        },
+        {
+          "name": "Business",
+          "price": "月額16米ドル（年間払いの場合）",
+          "billingCycle": "月額/年額",
+          "features": ["高度なセキュリティ", "管理機能", "SSO"]
+        }
+      ]
+    },
+    "officialUrl": "https://miro.com/ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://developers.miro.com/",
+    "pros": ["直感的なインターフェース", "リアルタイムコラボレーション", "豊富なテンプレート", "チーム連携"],
+    "cons": ["高度な機能は有料", "学習曲線", "ゲストユーザー招待時の情報漏えいリスク"],
+    "alternatives": ["Figma", "MURAL", "Lucidspark", "Conceptboard"],
+    "imageUrl": "https://example.com/miro-ai-logo.png",
+    "lastUpdated": "2025-03-10"
+  },
+  {
+    "id": "gamma",
+    "name": "Gamma",
+    "category": "資料作成・ビジュアル化",
+    "subcategory": "プレゼンテーション作成",
+    "description": "AIを活用したプレゼンテーション作成ツール。テキスト入力から美しいスライドを自動生成し、プレゼン資料作成の時間を大幅に短縮。",
+    "features": ["AIスライド生成", "テンプレート多数", "リアルタイム編集", "ウェブベース", "チーム共有"],
+    "useCases": ["ビジネスプレゼンテーション", "営業資料", "教育コンテンツ", "提案書"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本機能", "制限付き利用"],
+      "paidPlans": [
+        {
+          "name": "Pro",
+          "price": "月額8米ドル",
+          "billingCycle": "月額",
+          "features": ["無制限生成", "高度な編集", "プライバシー設定"]
+        },
+        {
+          "name": "Team",
+          "price": "月額16米ドル/ユーザー",
+          "billingCycle": "月額",
+          "features": ["チーム管理", "共同編集", "ブランドテンプレート"]
+        }
+      ]
+    },
+    "officialUrl": "https://gamma.app/",
+    "apiAvailable": false,
+    "apiDocUrl": "",
+    "pros": ["時間効率", "美しいデザイン", "使いやすさ", "ウェブベース"],
+    "cons": ["カスタマイズ制限", "オフライン編集不可", "高度な機能は有料"],
+    "alternatives": ["Beautiful.ai", "Tome", "Slidebean", "Canva"],
+    "imageUrl": "https://example.com/gamma-logo.png",
+    "lastUpdated": "2025-04-05"
+  },
+  {
+    "id": "napkin-ai",
+    "name": "Napkin.AI",
+    "category": "資料作成・ビジュアル化",
+    "subcategory": "図解・インフォグラフィック",
+    "description": "テキストから図解やインフォグラフィックを自動生成するAIツール。複雑な概念を視覚的に説明するのに最適。",
+    "features": ["テキストから図解生成", "インフォグラフィック", "フローチャート", "マインドマップ", "編集機能"],
+    "useCases": ["ビジネスプロセスの視覚化", "データのインフォグラフィック化", "プレゼン資料", "教育コンテンツ"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["基本機能", "制限付き利用"],
+      "paidPlans": [
+        {
+          "name": "Pro",
+          "price": "月額15米ドル",
+          "billingCycle": "月額",
+          "features": ["無制限生成", "高解像度出力", "高度な編集"]
+        },
+        {
+          "name": "Team",
+          "price": "月額30米ドル/ユーザー",
+          "billingCycle": "月額",
+          "features": ["チーム共有", "ブランド設定", "共同編集"]
+        }
+      ]
+    },
+    "officialUrl": "https://napkin.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.napkin.ai/",
+    "pros": ["直感的な操作", "時間効率", "視覚的説明力", "多様な図解スタイル"],
+    "cons": ["高度な機能は有料", "カスタマイズ制限", "特定の複雑な図解には不向き"],
+    "alternatives": ["Lucidchart", "Miro", "Canva", "Visme"],
+    "imageUrl": "https://example.com/napkin-ai-logo.png",
+    "lastUpdated": "2025-03-25"
+  },
+  {
+    "id": "dify",
+    "name": "Dify",
+    "category": "コード・開発支援",
+    "subcategory": "ノーコード開発",
+    "description": "ノーコードでAIアプリケーションを構築できるオープンソースプラットフォーム。カスタムAIチャットボットやアシスタントを簡単に作成可能。",
+    "features": ["ノーコード開発", "AIチャットボット作成", "カスタムモデル連携", "APIエンドポイント", "オープンソース"],
+    "useCases": ["カスタムAIアシスタント", "社内ナレッジベース", "顧客サポート", "データ処理自動化"],
+    "pricing": {
+      "hasFree": true,
+      "freeFeatures": ["オープンソース", "セルフホスティング", "基本機能"],
+      "paidPlans": [
+        {
+          "name": "Cloud",
+          "price": "従量課金",
+          "billingCycle": "月額",
+          "features": ["クラウドホスティング", "スケーリング", "高度なセキュリティ"]
+        }
+      ]
+    },
+    "officialUrl": "https://dify.ai/",
+    "apiAvailable": true,
+    "apiDocUrl": "https://docs.dify.ai/",
+    "pros": ["ノーコード", "カスタマイズ性", "オープンソース", "多様なユースケース"],
+    "cons": ["高度な機能には技術知識が必要", "一部機能はクラウド版のみ"],
+    "alternatives": ["Botpress", "Rasa", "Dialogflow", "Langchain"],
+    "imageUrl": "https://example.com/dify-logo.png",
+    "lastUpdated": "2025-04-10"
+  }
+]
