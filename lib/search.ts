@@ -1,5 +1,5 @@
 import Fuse from 'fuse.js';
-import { AITool } from '../types/ai-tool';
+import { AITool } from './types/ai-tool';
 import aiTools from '@/data/ai_tools.json';
 
 // 日本語の同義語マッピング

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Sparkles, Star, Zap, Brain, Image, Music, Video, Code } from "lucide-react";
+import { Search, Sparkles, Star, Zap, Brain, Image as ImageIcon, Music, Video, Code } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getOGPImage } from '@/lib/utils/ogp';
 import { ChatPanel } from '@/app/components/ChatPanel';
 import aiTools from '@/data/ai_tools.json';
+import Image from 'next/image';
 
 const popularTools = [
   {
@@ -69,7 +70,7 @@ const popularTools = [
 const categories = [
   { name: "すべて", icon: Sparkles, description: "全てのAIツール" },
   { name: "言語", icon: Brain, description: "大規模言語モデル、テキスト生成、翻訳" },
-  { name: "画像", icon: Image, description: "画像生成、編集" },
+  { name: "画像", icon: ImageIcon, description: "画像生成、編集" },
   { name: "音声", icon: Music, description: "音声合成・変換" },
   { name: "動画", icon: Video, description: "動画生成・編集" },
   { name: "開発", icon: Code, description: "コード生成・補助" },
@@ -127,6 +128,7 @@ export default function Home() {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [showChat, setShowChat] = useState(false);
   const [categoryTools, setCategoryTools] = useState<any[]>([]);
+  const [displayedTools, setDisplayedTools] = useState<any[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -168,6 +170,14 @@ export default function Home() {
     }
     fetchImageUrls(activeCategory === "すべて" ? aiTools : categoryTools);
   }, [activeCategory]);
+
+  useEffect(() => {
+    if (activeCategory === 'おすすめ') {
+      setDisplayedTools(popularTools);
+    } else {
+      setDisplayedTools(categoryTools);
+    }
+  }, [activeCategory, popularTools, categoryTools]);
 
   if (!mounted) {
     return null;
@@ -500,7 +510,7 @@ export default function Home() {
 
                 {/* 選択されたカテゴリのツール一覧 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {categoryTools.map((tool) => (
+                  {displayedTools.map((tool) => (
                     <Card key={tool.id} className="neumorphic overflow-hidden volumetric-light group">
                       <div className={`relative transition-all duration-300 ${
                         expandedDescriptions[tool.officialUrl] ? 'h-auto min-h-[200px]' : 'h-48'

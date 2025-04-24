@@ -1,4 +1,4 @@
-import { RecommendationRequest } from '@/lib/types';
+import { RecommendationRequest } from './types';
 import { SYSTEM_PROMPT, USER_PROMPT_TEMPLATE } from './prompt';
 import { generateToolDescription } from './generator';
 
@@ -33,19 +33,29 @@ export async function getRecommendations(request: RecommendationRequest) {
   
   // ローカルLLMを使用してレスポンスを生成
   const response = await generateToolDescription(
+    fullPrompt,
     {
       id: 'recommender',
       name: 'AI Tool Recommender',
       description: 'AIツール推薦システム',
       category: '推薦システム',
-      url: '',
-      pricing: '',
+      subcategory: 'ツール推薦',
       features: [],
       useCases: [],
-      limitations: [],
-      alternatives: []
-    },
-    fullPrompt
+      pricing: {
+        hasFree: true,
+        freeFeatures: [],
+        paidPlans: []
+      },
+      officialUrl: '',
+      apiAvailable: false,
+      apiDocUrl: '',
+      pros: [],
+      cons: [],
+      alternatives: [],
+      imageUrl: '',
+      lastUpdated: new Date().toISOString()
+    }
   );
 
   try {

@@ -17,19 +17,29 @@ export async function getToolRecommendation(
   
   // ローカルLLMを使用してレスポンスを生成
   const response = await generateToolDescription(
+    fullPrompt,
     {
       id: 'recommender',
       name: 'AI Tool Recommender',
       description: 'AIツール推薦システム',
       category: '推薦システム',
-      url: '',
-      pricing: '',
+      subcategory: 'ツール推薦',
       features: [],
       useCases: [],
-      limitations: [],
-      alternatives: []
-    },
-    fullPrompt
+      pricing: {
+        hasFree: true,
+        freeFeatures: [],
+        paidPlans: []
+      },
+      officialUrl: '',
+      apiAvailable: false,
+      apiDocUrl: '',
+      pros: [],
+      cons: [],
+      alternatives: [],
+      imageUrl: '',
+      lastUpdated: new Date().toISOString()
+    }
   );
 
   try {

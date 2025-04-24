@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     const tools = searchTools(query);
     const descriptions = await Promise.all(
-      tools.slice(0, 3).map(tool => generateToolDescription(tool, query))
+      tools.slice(0, 3).map(tool => generateToolDescription(query, tool))
     );
 
     return NextResponse.json({

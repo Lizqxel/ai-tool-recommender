@@ -262,7 +262,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <div
