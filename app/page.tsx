@@ -84,10 +84,23 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 検索結果が更新されたら、すべての説明文を収縮状態にリセット
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      const initialState = recommendations.reduce((acc, rec) => ({
+        ...acc,
+        [rec.url]: false
+      }), {});
+      setExpandedDescriptions(initialState);
+      fetchImageUrls(recommendations);
+    }
+  }, [recommendations]);
 
   // 画像URLを取得する関数
   const fetchImageUrls = async (tools: any[]) => {
@@ -97,12 +110,6 @@ export default function Home() {
     }
     setImageUrls(urls);
   };
-
-  useEffect(() => {
-    if (recommendations.length > 0) {
-      fetchImageUrls(recommendations);
-    }
-  }, [recommendations]);
 
   if (!mounted) {
     return null;
@@ -201,7 +208,9 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {recommendations.map((rec, index) => (
                   <Card key={index} className="neumorphic overflow-hidden volumetric-light group">
-                    <div className="relative h-48">
+                    <div className={`relative transition-all duration-300 ${
+                      expandedDescriptions[rec.url] ? 'h-auto min-h-[200px]' : 'h-48'
+                    }`}>
                       {/* 背景画像（ブラー効果付き） */}
                       <div 
                         className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
@@ -230,7 +239,29 @@ export default function Home() {
                             }}
                           />
                           <h3 className="text-xl font-semibold text-white mb-2">{rec.name}</h3>
-                          <p className="text-sm text-gray-300 line-clamp-2">{rec.description}</p>
+                          <div 
+                            className="relative cursor-pointer"
+                            onClick={() => setExpandedDescriptions(prev => ({
+                              ...prev,
+                              [rec.url]: !prev[rec.url]
+                            }))}
+                          >
+                            <p className={`
+                              text-sm text-gray-300 
+                              transition-all duration-300
+                              ${expandedDescriptions[rec.url] 
+                                ? 'max-h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400/20 scrollbar-track-transparent' 
+                                : 'h-[60px] overflow-hidden'
+                              }
+                              max-w-[280px] mx-auto
+                              pr-2
+                            `}>
+                              {rec.description}
+                            </p>
+                            {!expandedDescriptions[rec.url] && (
+                              <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900/60 to-transparent pointer-events-none" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -245,7 +276,7 @@ export default function Home() {
                         <div>
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {rec.features.slice(0, 3).map((feature, i) => (
+                            {rec.features.map((feature: string, i: number) => (
                               <span 
                                 key={i}
                                 className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
@@ -256,11 +287,11 @@ export default function Home() {
                           </div>
                         </div>
                         
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-4">
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
                             <ul className="mt-2 space-y-1">
-                              {rec.pros.slice(0, 2).map((pro, i) => (
+                              {rec.pros.map((pro: string, i: number) => (
                                 <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
                                   <span className="mr-2">✓</span> {pro}
                                 </li>
@@ -271,7 +302,7 @@ export default function Home() {
                           <div>
                             <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
                             <ul className="mt-2 space-y-1">
-                              {rec.cons.slice(0, 2).map((con, i) => (
+                              {rec.cons.map((con: string, i: number) => (
                                 <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
                                   <span className="mr-2">•</span> {con}
                                 </li>

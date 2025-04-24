@@ -48,24 +48,12 @@ export async function generateToolDescription(query: string, tool: AITool): Prom
       await initializeLLM();
     }
 
-    const prompt = LLM_CONFIG.prompt.user
-      .replace('{needs}', query)
-      .replace('{priorities}', tool.features.join(', '))
-      .replace('{limitations}', (tool as any).cons.join(', '));
-
-    // ダミーの応答を返す
-    return `これは「${tool.name}」に関する説明です。ユーザーのニーズ「${query}」に基づいて生成されました。
+    // オリジナルの説明文をそのまま返す
+    return tool.description || '';
     
-このツールは以下の機能を提供します：
-${tool.features.map(f => `- ${f}`).join('\n')}
-
-ユーザーの優先事項「${(tool as any).priorities || ''}」と制限事項「${(tool as any).limitations || ''}」を考慮した結果、このツールが最適です。
-
-詳細な説明：
-${tool.description || '詳細な説明はありません。'}`;
   } catch (error) {
-    console.error('テキスト生成に失敗しました:', error);
-    throw new Error('テキスト生成に失敗しました');
+    console.error('説明の取得に失敗しました:', error);
+    return '';
   }
 }
 
