@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getOGPImage } from '@/lib/utils/ogp';
+import { ChatPanel } from '@/app/components/ChatPanel';
 
 const popularTools = [
   {
@@ -24,6 +25,10 @@ const popularTools = [
     category: "言語",
     url: "https://chat.openai.com",
     image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=400",
+    price: "無料（GPT-4は月額$20）",
+    features: ["自然言語理解", "文章生成", "コード生成", "多言語対応", "画像理解"],
+    pros: ["高度な言語理解", "多様なタスク対応", "使いやすいインターフェース", "定期的な機能更新"],
+    cons: ["GPT-4は有料", "応答速度が遅い場合あり", "情報の正確性に限界"]
   },
   {
     name: "Midjourney",
@@ -31,6 +36,10 @@ const popularTools = [
     category: "画像",
     url: "https://midjourney.com",
     image: "https://images.unsplash.com/photo-1681124365088-70464520ef79?q=80&w=400",
+    price: "月額$10〜$60",
+    features: ["高品質画像生成", "アートスタイル", "画像編集", "バッチ処理", "コミュニティ"],
+    pros: ["高品質な出力", "多様なスタイル", "活発なコミュニティ", "定期的なアップデート"],
+    cons: ["Discord必須", "学習曲線", "有料プラン必要", "商用利用制限"]
   },
   {
     name: "Claude",
@@ -38,6 +47,10 @@ const popularTools = [
     category: "言語",
     url: "https://claude.ai",
     image: "https://images.unsplash.com/photo-1676299081847-8b021cd4ce15?q=80&w=400",
+    price: "無料（Claude Proは月額$20）",
+    features: ["長文理解", "文章分析", "コード生成", "多言語対応", "論理的思考"],
+    pros: ["長文処理能力", "論理的な応答", "倫理的配慮", "使いやすいインターフェース"],
+    cons: ["無料版は制限あり", "応答速度が遅い場合あり", "特定の機能は有料"]
   },
   {
     name: "Stable Diffusion",
@@ -45,6 +58,10 @@ const popularTools = [
     category: "画像",
     url: "https://stability.ai",
     image: "https://images.unsplash.com/photo-1686191128892-3fd3d1e3bf90?q=80&w=400",
+    price: "無料（商用利用はライセンス必要）",
+    features: ["オープンソース", "ローカル実行", "カスタマイズ性", "多様なモデル", "API対応"],
+    pros: ["完全な制御", "商用利用可能", "コミュニティサポート", "カスタマイズ性"],
+    cons: ["技術知識必要", "リソース消費", "学習曲線", "品質管理が必要"]
   },
 ];
 
@@ -85,6 +102,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -110,6 +128,11 @@ export default function Home() {
     }
     setImageUrls(urls);
   };
+
+  // お勧めツールの画像URLを取得
+  useEffect(() => {
+    fetchImageUrls(popularTools);
+  }, []);
 
   if (!mounted) {
     return null;
@@ -166,12 +189,12 @@ export default function Home() {
           </h1>
           <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
             あなたのニーズに最適なAIツールを見つけましょう。
-            やりたいことを入力するだけで、最適なツールをご紹介します。
+            チャットで対話しながら、最適なツールをご紹介します。
           </p>
         </div>
 
-        <div className="max-w-2xl mx-auto mb-16">
-          <div className="relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="relative mb-8">
             <Search className="absolute left-4 top-4 h-6 w-6 text-muted-foreground" />
             <Input
               placeholder="どんなことをしたいですか？（カンマ区切りで複数入力可）"
@@ -195,182 +218,259 @@ export default function Home() {
           {error && (
             <div className="text-red-500 mt-2 text-center">{error}</div>
           )}
-        </div>
-
-        <Tabs defaultValue="discover" className="max-w-5xl mx-auto">
-          <TabsList className="grid w-full grid-cols-2 mb-12 glass-effect">
-            <TabsTrigger value="discover">おすすめ</TabsTrigger>
-            <TabsTrigger value="categories">カテゴリー</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="discover">
-            {recommendations.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {recommendations.map((rec, index) => (
-                  <Card key={index} className="neumorphic overflow-hidden volumetric-light group">
-                    <div className={`relative transition-all duration-300 ${
-                      expandedDescriptions[rec.url] ? 'h-auto min-h-[200px]' : 'h-48'
-                    }`}>
-                      {/* 背景画像（ブラー効果付き） */}
-                      <div 
-                        className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
-                        style={{
-                          backgroundImage: `url(${imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          filter: 'blur(20px) brightness(0.7)',
-                        }}
-                      />
-                      
-                      {/* オーバーレイグラデーション */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
-                      
-                      {/* アイコンとタイトルのコンテナ */}
-                      <div className="relative flex items-center justify-center h-full p-6">
-                        <div className="text-center">
-                          <img
-                            src={imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`}
-                            alt={rec.name}
-                            className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
-                            style={{
-                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                              backdropFilter: 'blur(10px)',
-                              WebkitBackdropFilter: 'blur(10px)',
-                            }}
-                          />
-                          <h3 className="text-xl font-semibold text-white mb-2">{rec.name}</h3>
-                          <div 
-                            className="relative cursor-pointer"
-                            onClick={() => setExpandedDescriptions(prev => ({
-                              ...prev,
-                              [rec.url]: !prev[rec.url]
-                            }))}
-                          >
-                            <p className={`
-                              text-sm text-gray-300 
-                              transition-all duration-300
-                              ${expandedDescriptions[rec.url] 
-                                ? 'max-h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400/20 scrollbar-track-transparent' 
-                                : 'h-[60px] overflow-hidden'
-                              }
-                              max-w-[280px] mx-auto
-                              pr-2
-                            `}>
-                              {rec.description}
-                            </p>
-                            {!expandedDescriptions[rec.url] && (
-                              <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900/60 to-transparent pointer-events-none" />
-                            )}
+          <Tabs defaultValue="discover" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-12 glass-effect">
+              <TabsTrigger value="discover">おすすめ</TabsTrigger>
+              <TabsTrigger value="categories">カテゴリー</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="discover">
+              {recommendations.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {recommendations.map((rec, index) => (
+                    <Card key={index} className="neumorphic overflow-hidden volumetric-light group">
+                      <div className={`relative transition-all duration-300 ${
+                        expandedDescriptions[rec.url] ? 'h-auto min-h-[200px]' : 'h-48'
+                      }`}>
+                        {/* 背景画像（ブラー効果付き） */}
+                        <div 
+                          className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
+                          style={{
+                            backgroundImage: `url(${imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'blur(20px) brightness(0.7)',
+                          }}
+                        />
+                        
+                        {/* オーバーレイグラデーション */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
+                        
+                        {/* アイコンとタイトルのコンテナ */}
+                        <div className="relative flex items-center justify-center h-full p-6">
+                          <div className="text-center">
+                            <img
+                              src={imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`}
+                              alt={rec.name}
+                              className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
+                              style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                                WebkitBackdropFilter: 'blur(10px)',
+                              }}
+                            />
+                            <h3 className="text-xl font-semibold text-white mb-2">{rec.name}</h3>
+                            <div 
+                              className="relative cursor-pointer"
+                              onClick={() => setExpandedDescriptions(prev => ({
+                                ...prev,
+                                [rec.url]: !prev[rec.url]
+                              }))}
+                            >
+                              <p className={`
+                                text-sm text-gray-300 
+                                transition-all duration-300
+                                ${expandedDescriptions[rec.url] 
+                                  ? 'max-h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400/20 scrollbar-track-transparent' 
+                                  : 'h-[60px] overflow-hidden'
+                                }
+                                max-w-[280px] mx-auto
+                                pr-2
+                              `}>
+                                {rec.description}
+                              </p>
+                              {!expandedDescriptions[rec.url] && (
+                                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900/60 to-transparent pointer-events-none" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <CardContent className="p-6 bg-white dark:bg-gray-900">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
-                          <span className="text-sm font-semibold">{rec.price}</span>
-                        </div>
-                        
-                        <div>
-                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {rec.features.map((feature: string, i: number) => (
-                              <span 
-                                key={i}
-                                className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                              >
-                                {feature}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
-                            <ul className="mt-2 space-y-1">
-                              {rec.pros.map((pro: string, i: number) => (
-                                <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
-                                  <span className="mr-2">✓</span> {pro}
-                                </li>
-                              ))}
-                            </ul>
+                      
+                      <CardContent className="p-6 bg-white dark:bg-gray-900">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
+                            <span className="text-sm font-semibold">{rec.price}</span>
                           </div>
                           
                           <div>
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
-                            <ul className="mt-2 space-y-1">
-                              {rec.cons.map((con: string, i: number) => (
-                                <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
-                                  <span className="mr-2">•</span> {con}
-                                </li>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {rec.features.map((feature: string, i: number) => (
+                                <span 
+                                  key={i}
+                                  className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                >
+                                  {feature}
+                                </span>
                               ))}
-                            </ul>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
+                              <ul className="mt-2 space-y-1">
+                                {rec.pros.map((pro: string, i: number) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                    <span className="mr-2">✓</span> {pro}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
+                              <ul className="mt-2 space-y-1">
+                                {rec.cons.map((con: string, i: number) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                    <span className="mr-2">•</span> {con}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                          
+                          <Button
+                            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                            onClick={() => window.open(rec.url, "_blank")}
+                          >
+                            使ってみる
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {popularTools.map((tool) => (
+                    <Card key={tool.name} className="neumorphic overflow-hidden volumetric-light group">
+                      <div className="relative h-48 transition-all duration-300">
+                        {/* 背景画像（ブラー効果付き） */}
+                        <div 
+                          className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
+                          style={{
+                            backgroundImage: `url(${imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'blur(20px) brightness(0.7)',
+                          }}
+                        />
+                        
+                        {/* オーバーレイグラデーション */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
+                        
+                        {/* アイコンとタイトルのコンテナ */}
+                        <div className="relative flex items-center justify-center h-full p-6">
+                          <div className="text-center">
+                            <img
+                              src={imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`}
+                              alt={tool.name}
+                              className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
+                              style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(10px)',
+                                WebkitBackdropFilter: 'blur(10px)',
+                              }}
+                            />
+                            <h3 className="text-xl font-semibold text-white mb-2">{tool.name}</h3>
+                            <p className="text-sm text-gray-300 line-clamp-2">{tool.description}</p>
                           </div>
                         </div>
-                        
-                        <Button
-                          className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                          onClick={() => window.open(rec.url, "_blank")}
-                        >
-                          使ってみる
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {popularTools.map((tool) => (
-                  <Card key={tool.name} className="neumorphic overflow-hidden volumetric-light">
-                    <img
-                      src={tool.image}
-                      alt={tool.name}
-                      className="w-full h-48 object-cover"
-                    />
-                    <CardHeader>
-                      <CardTitle className="text-xl">{tool.name}</CardTitle>
-                      <CardDescription className="text-base">{tool.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Button
-                        className="w-full glass-effect hover:neon-border transition-all duration-300"
-                        onClick={() => window.open(tool.url, "_blank")}
-                      >
-                        使ってみる
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                      
+                      <CardContent className="p-6 bg-white dark:bg-gray-900">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
+                            <span className="text-sm font-semibold">{tool.price}</span>
+                          </div>
+                          
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {tool.features.map((feature, i) => (
+                                <span 
+                                  key={i}
+                                  className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                >
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
+                              <ul className="mt-2 space-y-1">
+                                {tool.pros.map((pro, i) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                    <span className="mr-2">✓</span> {pro}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div>
+                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
+                              <ul className="mt-2 space-y-1">
+                                {tool.cons.map((con, i) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                    <span className="mr-2">•</span> {con}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                          
+                          <Button
+                            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                            onClick={() => window.open(tool.url, "_blank")}
+                          >
+                            使ってみる
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="categories">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {categories.map((category) => {
-                const Icon = category.icon;
-                return (
-                  <Button
-                    key={category.name}
-                    variant={activeCategory === category.name ? "default" : "outline"}
-                    className={`h-32 text-lg flex-col neumorphic ${
-                      activeCategory === category.name ? 'neon-border' : ''
-                    }`}
-                    onClick={() => setActiveCategory(category.name)}
-                  >
-                    <Icon className="h-8 w-8 mb-2" />
-                    <span className="text-lg mb-1">{category.name}</span>
-                    <span className="text-sm text-muted-foreground">{category.description}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="categories">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {categories.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <Button
+                      key={category.name}
+                      variant={activeCategory === category.name ? "default" : "outline"}
+                      className={`h-32 text-lg flex-col neumorphic ${
+                        activeCategory === category.name ? 'neon-border' : ''
+                      }`}
+                      onClick={() => setActiveCategory(category.name)}
+                    >
+                      <Icon className="h-8 w-8 mb-2" />
+                      <span className="text-lg mb-1">{category.name}</span>
+                      <span className="text-sm text-muted-foreground">{category.description}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <Button
+          onClick={() => setShowChat(!showChat)}
+          className="fixed bottom-8 right-8 z-50 glass-effect hover:neon-border transition-all duration-300"
+        >
+          {showChat ? 'チャットを閉じる' : 'AIアシスタントと話す'}
+        </Button>
+        {showChat && <ChatPanel onClose={() => setShowChat(false)} />}
       </div>
     </main>
   );

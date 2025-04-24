@@ -88,3 +88,49 @@
   transform: rotate(45deg);
   pointer-events: none;
 }
+
+/* Apple風スクロールバー */
+.mac-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.mac-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mac-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.mac-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* スクロールバーを自動的に隠す */
+.mac-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.mac-scrollbar::-webkit-scrollbar-thumb:window-inactive {
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .mac-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.2);
+  }
+  
+  .mac-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.4);
+  }
+  
+  .mac-scrollbar::-webkit-scrollbar-thumb:window-inactive {
+    background-color: rgba(156, 163, 175, 0.1);
+  }
+}
