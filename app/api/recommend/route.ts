@@ -8,22 +8,12 @@ export const runtime = 'nodejs';
 
 interface RecommendRequest {
   needs: string[];
-  budget: string;
-  technicalLevel: string;
-  priorities: string[];
-  limitations: string[];
 }
 
 function validateRequest(data: any): data is RecommendRequest {
   return (
     Array.isArray(data.needs) &&
-    data.needs.every((n: any) => typeof n === 'string') &&
-    typeof data.budget === 'string' &&
-    typeof data.technicalLevel === 'string' &&
-    Array.isArray(data.priorities) &&
-    data.priorities.every((p: any) => typeof p === 'string') &&
-    Array.isArray(data.limitations) &&
-    data.limitations.every((l: any) => typeof l === 'string')
+    data.needs.every((n: any) => typeof n === 'string')
   );
 }
 
@@ -38,20 +28,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { needs, budget, technicalLevel, priorities, limitations } = data;
+    const { needs } = data;
 
     // 推薦ロジックを使用してツールを取得
-    const recommendedTools = recommendTools(needs, priorities, limitations, budget);
+    const recommendedTools = recommendTools(needs, [], [], '');
 
     // 各ツールの説明を生成
     const recommendations = await Promise.all(
       recommendedTools.map(async (tool) => {
         const query = `
           ニーズ: ${needs.join(', ')}
-          予算: ${budget}
-          技術レベル: ${technicalLevel}
-          優先事項: ${priorities.join(', ')}
-          制限事項: ${limitations.join(', ')}
         `;
 
         const description = await generateToolDescription(query, tool);

@@ -1,9 +1,9 @@
 export const SYSTEM_PROMPT = `あなたはAIツールの専門家です。ユーザーのニーズに基づいて、最適なAIツールを推薦してください。
 推薦する際は、以下の点を考慮してください：
-- ユーザーの技術レベル
-- 予算制約
-- 優先事項
-- 制限事項
+- ユーザーのニーズに最も適したツールを選定
+- ツールの特徴とユーザーのニーズの関連性
+- ツールの使いやすさと学習曲線
+- 価格帯と機能のバランス
 
 推薦は以下の形式のJSONで返してください：
 {
@@ -20,19 +20,7 @@ export const SYSTEM_PROMPT = `あなたはAIツールの専門家です。ユー
   ]
 }`;
 
-export const USER_PROMPT_TEMPLATE = `以下の条件に基づいて、AIツールを推薦してください：
+export const USER_PROMPT_TEMPLATE = `以下のニーズに基づいて、AIツールを推薦してください：
 
 ニーズ：
-{needs}
-
-予算：
-{budget}
-
-技術レベル：
-{technicalLevel}
-
-優先事項：
-{priorities}
-
-制限事項：
-{limitations}`; 
+{needs}`; 

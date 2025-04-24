@@ -1,9 +1,5 @@
 export interface RecommendationRequest {
   needs: string[];
-  budget: string;
-  technicalLevel: string;
-  priorities: string[];
-  limitations: string[];
 }
 
 export interface AITool {

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getOGPImage } from '@/lib/utils/ogp';
 
 const popularTools = [
   {
@@ -79,37 +80,40 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("すべて");
-  const [needs, setNeeds] = useState("");
-  const [budget, setBudget] = useState("");
-  const [technicalLevel, setTechnicalLevel] = useState("");
-  const [priorities, setPriorities] = useState("");
-  const [limitations, setLimitations] = useState("");
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // 画像URLを取得する関数
+  const fetchImageUrls = async (tools: any[]) => {
+    const urls: Record<string, string> = {};
+    for (const tool of tools) {
+      urls[tool.url] = await getOGPImage(tool.url);
+    }
+    setImageUrls(urls);
+  };
+
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      fetchImageUrls(recommendations);
+    }
+  }, [recommendations]);
+
   if (!mounted) {
     return null;
   }
 
-  const filteredTools = popularTools.filter(
-    (tool) =>
-      (activeCategory === "すべて" || tool.category === activeCategory) &&
-      (tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const handleRecommend = async () => {
+  const handleSearch = async () => {
     setIsLoading(true);
     setError("");
 
-    const validationError = validateInputs(needs, budget, technicalLevel, priorities, limitations);
-    if (validationError) {
-      setError(validationError);
+    if (!searchQuery.trim()) {
+      setError('検索キーワードを入力してください');
       setIsLoading(false);
       return;
     }
@@ -121,11 +125,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          needs: needs.split(",").map((n) => n.trim()).filter(Boolean),
-          budget,
-          technicalLevel,
-          priorities: priorities.split(",").map((p) => p.trim()).filter(Boolean),
-          limitations: limitations.split(",").map((l) => l.trim()).filter(Boolean),
+          needs: searchQuery.split(",").map((n) => n.trim()).filter(Boolean),
         }),
       });
 
@@ -167,45 +167,155 @@ export default function Home() {
           <div className="relative">
             <Search className="absolute left-4 top-4 h-6 w-6 text-muted-foreground" />
             <Input
-              placeholder="どんなことをしたいですか？"
+              placeholder="どんなことをしたいですか？（カンマ区切りで複数入力可）"
               className="pl-12 py-7 text-lg rounded-2xl glass-effect neon-border"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
             />
+            <Button
+              className="absolute right-4 top-4 glass-effect hover:neon-border transition-all duration-300"
+              onClick={handleSearch}
+              disabled={isLoading}
+            >
+              {isLoading ? "検索中..." : "検索"}
+            </Button>
           </div>
+          {error && (
+            <div className="text-red-500 mt-2 text-center">{error}</div>
+          )}
         </div>
 
         <Tabs defaultValue="discover" className="max-w-5xl mx-auto">
-          <TabsList className="grid w-full grid-cols-3 mb-12 glass-effect">
+          <TabsList className="grid w-full grid-cols-2 mb-12 glass-effect">
             <TabsTrigger value="discover">おすすめ</TabsTrigger>
             <TabsTrigger value="categories">カテゴリー</TabsTrigger>
-            <TabsTrigger value="recommend">カスタム推薦</TabsTrigger>
           </TabsList>
           
           <TabsContent value="discover">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredTools.map((tool) => (
-                <Card key={tool.name} className="neumorphic overflow-hidden volumetric-light">
-                  <img
-                    src={tool.image}
-                    alt={tool.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <CardHeader>
-                    <CardTitle className="text-xl">{tool.name}</CardTitle>
-                    <CardDescription className="text-base">{tool.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button
-                      className="w-full glass-effect hover:neon-border transition-all duration-300"
-                      onClick={() => window.open(tool.url, "_blank")}
-                    >
-                      使ってみる
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {recommendations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {recommendations.map((rec, index) => (
+                  <Card key={index} className="neumorphic overflow-hidden volumetric-light group">
+                    <div className="relative h-48">
+                      {/* 背景画像（ブラー効果付き） */}
+                      <div 
+                        className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
+                        style={{
+                          backgroundImage: `url(${imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          filter: 'blur(20px) brightness(0.7)',
+                        }}
+                      />
+                      
+                      {/* オーバーレイグラデーション */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
+                      
+                      {/* アイコンとタイトルのコンテナ */}
+                      <div className="relative flex items-center justify-center h-full p-6">
+                        <div className="text-center">
+                          <img
+                            src={imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`}
+                            alt={rec.name}
+                            className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
+                            style={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                              backdropFilter: 'blur(10px)',
+                              WebkitBackdropFilter: 'blur(10px)',
+                            }}
+                          />
+                          <h3 className="text-xl font-semibold text-white mb-2">{rec.name}</h3>
+                          <p className="text-sm text-gray-300 line-clamp-2">{rec.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <CardContent className="p-6 bg-white dark:bg-gray-900">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
+                          <span className="text-sm font-semibold">{rec.price}</span>
+                        </div>
+                        
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {rec.features.slice(0, 3).map((feature, i) => (
+                              <span 
+                                key={i}
+                                className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
+                            <ul className="mt-2 space-y-1">
+                              {rec.pros.slice(0, 2).map((pro, i) => (
+                                <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                  <span className="mr-2">✓</span> {pro}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
+                            <ul className="mt-2 space-y-1">
+                              {rec.cons.slice(0, 2).map((con, i) => (
+                                <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                  <span className="mr-2">•</span> {con}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                        
+                        <Button
+                          className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                          onClick={() => window.open(rec.url, "_blank")}
+                        >
+                          使ってみる
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {popularTools.map((tool) => (
+                  <Card key={tool.name} className="neumorphic overflow-hidden volumetric-light">
+                    <img
+                      src={tool.image}
+                      alt={tool.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    <CardHeader>
+                      <CardTitle className="text-xl">{tool.name}</CardTitle>
+                      <CardDescription className="text-base">{tool.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        className="w-full glass-effect hover:neon-border transition-all duration-300"
+                        onClick={() => window.open(tool.url, "_blank")}
+                      >
+                        使ってみる
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="categories">
@@ -228,133 +338,6 @@ export default function Home() {
                 );
               })}
             </div>
-          </TabsContent>
-
-          <TabsContent value="recommend">
-            <Card className="p-6 neumorphic">
-              <CardHeader>
-                <CardTitle>カスタム推薦</CardTitle>
-                <CardDescription>
-                  あなたのニーズに合わせて最適なAIツールを推薦します
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="needs">ニーズ（カンマ区切り）</Label>
-                    <Textarea
-                      id="needs"
-                      placeholder="例: 画像生成, テキスト生成, コード生成"
-                      value={needs}
-                      onChange={(e) => setNeeds(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="budget">予算</Label>
-                    <Input
-                      id="budget"
-                      placeholder="例: 無料, 月額1000円以下"
-                      value={budget}
-                      onChange={(e) => setBudget(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="technicalLevel">技術レベル</Label>
-                    <Select value={technicalLevel} onValueChange={setTechnicalLevel}>
-                      <SelectTrigger id="technicalLevel" className="mt-1">
-                        <SelectValue placeholder="技術レベルを選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="初心者">初心者</SelectItem>
-                        <SelectItem value="中級者">中級者</SelectItem>
-                        <SelectItem value="上級者">上級者</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="priorities">優先事項（カンマ区切り）</Label>
-                    <Textarea
-                      id="priorities"
-                      placeholder="例: 使いやすさ, 精度, 速度"
-                      value={priorities}
-                      onChange={(e) => setPriorities(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="limitations">制限事項（カンマ区切り）</Label>
-                    <Textarea
-                      id="limitations"
-                      placeholder="例: インターネット接続不要, 日本語対応"
-                      value={limitations}
-                      onChange={(e) => setLimitations(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <Button
-                    className="w-full glass-effect hover:neon-border transition-all duration-300"
-                    onClick={handleRecommend}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "推薦を生成中..." : "推薦を取得"}
-                  </Button>
-                  {error && (
-                    <div className="text-red-500 mt-2">{error}</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {recommendations.length > 0 && (
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">推薦結果</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {recommendations.map((rec, index) => (
-                    <Card key={index} className="neumorphic overflow-hidden">
-                      <CardHeader>
-                        <CardTitle>{rec.name}</CardTitle>
-                        <CardDescription>{rec.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div>
-                            <span className="font-semibold">価格:</span> {rec.price}
-                          </div>
-                          <div>
-                            <span className="font-semibold">機能:</span>{" "}
-                            {rec.features.join(", ")}
-                          </div>
-                          <div>
-                            <span className="font-semibold">メリット:</span>
-                            <ul className="list-disc list-inside">
-                              {rec.pros.map((pro: string, i: number) => (
-                                <li key={i}>{pro}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div>
-                            <span className="font-semibold">デメリット:</span>
-                            <ul className="list-disc list-inside">
-                              {rec.cons.map((con: string, i: number) => (
-                                <li key={i}>{con}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                        <Button
-                          className="w-full mt-4 glass-effect hover:neon-border transition-all duration-300"
-                          onClick={() => window.open(rec.url, "_blank")}
-                        >
-                          使ってみる
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
           </TabsContent>
         </Tabs>
       </div>

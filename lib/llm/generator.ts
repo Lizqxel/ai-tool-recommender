@@ -121,14 +121,14 @@ export function recommendTools(
     return score;
   };
 
-  // 全ツールをスコアリングし、上位3つを返す
+  // 全ツールをスコアリングし、スコアが0以上のものを返す
   const scoredTools = aiTools
     .map(tool => ({
       tool,
       score: calculateScore(tool as AITool),
     }))
+    .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
     .map(({ tool }) => tool as AITool);
 
   return scoredTools;
