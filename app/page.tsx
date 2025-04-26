@@ -271,7 +271,7 @@ export default function Home() {
             
             <TabsContent value="discover">
               {recommendations.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {recommendations.map((rec, index) => (
                     <Card key={index} className="neumorphic overflow-hidden volumetric-light group">
                       <div className={`relative transition-all duration-300 ${
@@ -389,7 +389,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {popularTools.map((tool) => (
                     <Card key={tool.name} className="neumorphic overflow-hidden volumetric-light group">
                       <div className="relative h-48 transition-all duration-300">
@@ -509,7 +509,7 @@ export default function Home() {
                 </div>
 
                 {/* 選択されたカテゴリのツール一覧 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {displayedTools.map((tool) => (
                     <Card key={tool.id} className="neumorphic overflow-hidden volumetric-light group">
                       <div className={`relative transition-all duration-300 ${
