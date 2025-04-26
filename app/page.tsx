@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Sparkles, Star, Zap, Brain, Image as ImageIcon, Music, Video, Code } from "lucide-react";
+import { Search, Sparkles, Star, Zap, Brain, Image as ImageIcon, Music, Video, Code, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,99 @@ import { getOGPImage } from '@/lib/utils/ogp';
 import { ChatPanel } from '@/app/components/ChatPanel';
 import aiTools from '@/data/ai_tools.json';
 import Image from 'next/image';
+import { motion } from "framer-motion";
+import { DEFAULT_LLM_CONFIG } from '@/lib/llm/config';
+
+interface RecommendedTool {
+  name: string;
+  reason: string;
+  details?: {
+    description?: string;
+    officialUrl?: string;
+    pricing?: {
+      paidPlans?: Array<{
+        price?: string;
+      }>;
+    };
+    features?: string[];
+    pros?: string[];
+    cons?: string[];
+  };
+}
+
+interface TaskResponse {
+  task: string;
+  description: string;
+  recommendedTools: RecommendedTool[];
+  comparison?: string;
+  recommendation?: string;
+}
+
+interface TaskGroup {
+  task: string;
+  description: string;
+  tools: ProcessedRecommendation[];
+  comparison?: string;
+  recommendation?: string;
+}
+
+interface ProcessedRecommendation {
+  name: string;
+  description: string;
+  url: string;
+  price: string;
+  features: string[];
+  pros: string[];
+  cons: string[];
+}
+
+interface LoadingStepProps {
+  step: number;
+  currentStep: number;
+  label: string;
+}
+
+const LoadingStep: React.FC<LoadingStepProps> = ({ step, currentStep, label }) => {
+  const isCompleted = currentStep > step;
+  const isActive = currentStep === step;
+
+  return (
+    <motion.div 
+      className="flex items-center space-x-3"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: step * 0.2 }}
+    >
+      <motion.div 
+        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          isCompleted ? 'bg-green-500' : isActive ? 'bg-blue-500' : 'bg-gray-300'
+        }`}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: isActive ? [1, 1.1, 1] : 1 }}
+        transition={{ duration: 0.5, repeat: isActive ? Infinity : 0 }}
+      >
+        {isCompleted ? (
+          <motion.svg 
+            className="w-5 h-5 text-white" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </motion.svg>
+        ) : (
+          <span className="text-white">{step + 1}</span>
+        )}
+      </motion.div>
+      <span className={`text-sm ${isActive ? 'text-blue-500 font-medium' : 'text-gray-500'}`}>
+        {label}
+      </span>
+    </motion.div>
+  );
+};
 
 const popularTools = [
   {
@@ -98,6 +191,11 @@ const categoryMapping: { [key: string]: string } = {
   "特殊分野": "生産性"
 };
 
+// ツール名やタイトルから**を除去するユーティリティ関数
+function stripMarkdownBold(text: string): string {
+  return text.replace(/^\*\*|\*\*$/g, '').replace(/\*\*/g, '');
+}
+
 function validateInputs(needs: string, budget: string, technicalLevel: string, priorities: string, limitations: string): string | null {
   if (!needs.trim()) {
     return 'ニーズを入力してください';
@@ -129,101 +227,219 @@ export default function Home() {
   const [showChat, setShowChat] = useState(false);
   const [categoryTools, setCategoryTools] = useState<any[]>([]);
   const [displayedTools, setDisplayedTools] = useState<any[]>([]);
+  const [selectedNeeds, setSelectedNeeds] = useState<string[]>([]);
+  const [selectedBudget, setSelectedBudget] = useState<string>("");
+  const [selectedTechnicalLevel, setSelectedTechnicalLevel] = useState<string>("");
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [selectedLimitations, setSelectedLimitations] = useState<string[]>([]);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const loadingSteps = [
+    "ニーズの分析中...",
+    "タスクの分解中...",
+    "最適なツールを検索中...",
+    "結果を生成中..."
+  ];
 
+  // クライアントサイドでのみ実行される処理
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  // 検索結果が更新されたら、すべての説明文を収縮状態にリセット
-  useEffect(() => {
-    if (recommendations.length > 0) {
-      const initialState = recommendations.reduce((acc, rec) => ({
-        ...acc,
-        [rec.url]: false
-      }), {});
-      setExpandedDescriptions(initialState);
-      fetchImageUrls(recommendations);
-    }
-  }, [recommendations]);
-
-  // 画像URLを取得する関数
-  const fetchImageUrls = async (tools: any[]) => {
-    const urls: Record<string, string> = {};
-    for (const tool of tools) {
-      urls[tool.url] = await getOGPImage(tool.url);
-    }
-    setImageUrls(urls);
-  };
-
-  // お勧めツールの画像URLを取得
-  useEffect(() => {
-    fetchImageUrls(popularTools);
-  }, []);
-
-  // カテゴリが変更されたときにツールをフィルタリング
-  useEffect(() => {
+    // 初期データの設定
     if (activeCategory === "すべて") {
       setCategoryTools(aiTools);
-    } else {
-      const filteredTools = aiTools.filter(tool => categoryMapping[tool.category] === activeCategory);
-      setCategoryTools(filteredTools);
+      setDisplayedTools(aiTools);
     }
-    fetchImageUrls(activeCategory === "すべて" ? aiTools : categoryTools);
-  }, [activeCategory]);
+  }, []);
 
+  // 画像URLの取得は必要な時のみ実行
+  const fetchImageUrls = async (tools: any[]) => {
+    if (!mounted) return;
+    const urls: Record<string, string> = {};
+    for (const tool of tools) {
+      if (!imageUrls[tool.url]) {
+        urls[tool.url] = await getOGPImage(tool.url);
+      }
+    }
+    setImageUrls(prev => ({ ...prev, ...urls }));
+  };
+
+  // カテゴリ変更時の処理
   useEffect(() => {
-    if (activeCategory === 'おすすめ') {
-      setDisplayedTools(popularTools);
-    } else {
-      setDisplayedTools(categoryTools);
-    }
-  }, [activeCategory, popularTools, categoryTools]);
+    if (!mounted) return;
+    
+    const newTools = activeCategory === "すべて" 
+      ? aiTools 
+      : aiTools.filter(tool => categoryMapping[tool.category] === activeCategory);
+    
+    setCategoryTools(newTools);
+    setDisplayedTools(newTools);
+    fetchImageUrls(newTools);
+  }, [activeCategory, mounted]);
 
-  if (!mounted) {
-    return null;
-  }
-
-  const handleSearch = async () => {
-    setIsLoading(true);
-    setError("");
-
-    if (!searchQuery.trim()) {
-      setError('検索キーワードを入力してください');
-      setIsLoading(false);
-      return;
+  // ツール情報を取得または生成する関数
+  const getToolDetails = (toolName: string): any => {
+    // ai_tools.jsonから該当するツールを検索
+    const toolFromJson = aiTools.find(
+      tool => tool.name.toLowerCase() === toolName.toLowerCase()
+    );
+    
+    if (toolFromJson) {
+      return {
+        name: toolFromJson.name,
+        description: toolFromJson.description,
+        url: toolFromJson.officialUrl,
+        price: toolFromJson.pricing.hasFree 
+          ? "無料版あり" 
+          : toolFromJson.pricing.paidPlans[0]?.price || "価格情報なし",
+        features: toolFromJson.features,
+        pros: toolFromJson.pros,
+        cons: toolFromJson.cons,
+        category: toolFromJson.category
+      };
     }
     
+    return null;
+  };
+
+  // handleSearch関数を修正
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
     try {
-      const response = await fetch("/api/recommend", {
-        method: "POST",
+      setIsLoading(true);
+      setError("");
+      setLoadingStep(0);
+      setTaskGroups([]);
+
+      const stepInterval = setInterval(() => {
+        setLoadingStep(prev => (prev < loadingSteps.length - 1 ? prev + 1 : prev));
+      }, 1500);
+      
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          needs: searchQuery.split(",").map((n) => n.trim()).filter(Boolean),
-        }),
+        body: JSON.stringify({ needs: searchQuery.trim() })
       });
+
+      clearInterval(stepInterval);
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('APIエラーの詳細:', errorData);
-        throw new Error(errorData.error || `APIエラー: ${response.status}`);
+        throw new Error(errorData.error || '検索中にエラーが発生しました');
       }
 
       const data = await response.json();
-      if (!data.recommendations || !Array.isArray(data.recommendations)) {
-        throw new Error('不正なレスポンス形式です');
-      }
+      
+      if (data.tasks && Array.isArray(data.tasks)) {
+        const processedTaskGroups = await Promise.all(data.tasks.map(async (task: TaskResponse) => {
+          // 比較文をツール情報から分離
+          const comparisonTools = task.recommendedTools.filter(tool => 
+            tool.name.includes('と') && tool.name.includes('は、')
+          );
+          
+          // 比較文を結合
+          const comparison = comparisonTools
+            .map(tool => tool.reason)
+            .join('\n\n');
+          
+          // 通常のツール情報を処理
+          const uniqueTools = new Map();
+          const normalTools = task.recommendedTools.filter(tool => 
+            !tool.name.includes('と') && !tool.name.includes('は、')
+          );
 
-      setRecommendations(data.recommendations);
+          for (const tool of normalTools) {
+            if (!uniqueTools.has(tool.name)) {
+              // ai_tools.jsonから情報を取得
+              let toolDetails = getToolDetails(tool.name);
+              
+              // 情報が見つからない場合、LLMから詳細情報を取得
+              if (!toolDetails) {
+                try {
+                  const detailsResponse = await fetch('/api/tool-details', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ toolName: tool.name })
+                  });
+                  
+                  if (detailsResponse.ok) {
+                    const details = await detailsResponse.json();
+                    toolDetails = details;
+                  }
+                } catch (error) {
+                  console.error(`Failed to fetch details for ${tool.name}:`, error);
+                }
+              }
+              
+              uniqueTools.set(tool.name, {
+                name: tool.name,
+                description: tool.reason,
+                url: toolDetails?.url || '#',
+                price: toolDetails?.price || '価格情報なし',
+                features: toolDetails?.features || [],
+                pros: toolDetails?.pros || [],
+                cons: toolDetails?.cons || []
+              });
+            } else {
+              // 既存の説明文に新しい理由を追加
+              const existingTool = uniqueTools.get(tool.name);
+              if (!existingTool.description.includes(tool.reason)) {
+                existingTool.description = `${existingTool.description}\n\n${tool.reason}`;
+              }
+            }
+          }
+          
+          // 推薦文を取得
+          let recommendation;
+          try {
+            const recommendationResponse = await fetch('/api/generate-recommendation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                task: task.task,
+                tools: normalTools.map(tool => tool.name)
+              })
+            });
+
+            if (recommendationResponse.ok) {
+              const data = await recommendationResponse.json();
+              recommendation = data.recommendation;
+            }
+          } catch (error) {
+            console.error('推薦文の取得に失敗しました:', error);
+          }
+          
+          return {
+            task: task.task,
+            description: task.description,
+            tools: Array.from(uniqueTools.values()),
+            comparison: comparison || undefined,
+            recommendation: recommendation || undefined
+          };
+        }));
+        
+        setTaskGroups(processedTaskGroups);
+      }
     } catch (err) {
-      console.error('推薦の取得に失敗:', err);
-      setError(err instanceof Error ? err.message : "予期せぬエラーが発生しました");
-      setRecommendations([]);
+      setError(err instanceof Error ? err.message : '検索中にエラーが発生しました');
+      setTaskGroups([]);
     } finally {
       setIsLoading(false);
+      setLoadingStep(0);
     }
   };
+
+  // 初期レンダリング時は何も表示しない
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-background via-accent to-background">
@@ -263,6 +479,44 @@ export default function Home() {
           {error && (
             <div className="text-red-500 mt-2 text-center">{error}</div>
           )}
+          {isLoading && (
+            <motion.div 
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div 
+                className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4"
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+              >
+                <div className="space-y-6">
+                  {loadingSteps.map((label, index) => (
+                    <LoadingStep
+                      key={index}
+                      step={index}
+                      currentStep={loadingStep}
+                      label={label}
+                    />
+                  ))}
+                  <motion.div
+                    className="h-1 bg-gray-200 rounded-full mt-6 overflow-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <motion.div
+                      className="h-full bg-blue-500 rounded-full"
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${(loadingStep + 1) * 25}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </motion.div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
           <Tabs defaultValue="discover" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-12 glass-effect">
               <TabsTrigger value="discover">おすすめ</TabsTrigger>
@@ -270,122 +524,171 @@ export default function Home() {
             </TabsList>
             
             <TabsContent value="discover">
-              {recommendations.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                  {recommendations.map((rec, index) => (
-                    <Card key={index} className="neumorphic overflow-hidden volumetric-light group">
-                      <div className={`relative transition-all duration-300 ${
-                        expandedDescriptions[rec.url] ? 'h-auto min-h-[200px]' : 'h-48'
-                      }`}>
-                        {/* 背景画像（ブラー効果付き） */}
-                        <div 
-                          className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
-                          style={{
-                            backgroundImage: `url(${imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            filter: 'blur(20px) brightness(0.7)',
-                          }}
-                        />
-                        
-                        {/* オーバーレイグラデーション */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
-                        
-                        {/* アイコンとタイトルのコンテナ */}
-                        <div className="relative flex items-center justify-center h-full p-6">
-                          <div className="text-center">
-                            <img
-                              src={imageUrls[rec.url] || `https://www.google.com/s2/favicons?domain=${rec.url}&sz=128`}
-                              alt={rec.name}
-                              className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
-                              style={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                backdropFilter: 'blur(10px)',
-                                WebkitBackdropFilter: 'blur(10px)',
-                              }}
-                            />
-                            <h3 className="text-xl font-semibold text-white mb-2">{rec.name}</h3>
-                            <div 
-                              className="relative cursor-pointer"
-                              onClick={() => setExpandedDescriptions(prev => ({
-                                ...prev,
-                                [rec.url]: !prev[rec.url]
-                              }))}
-                            >
-                              <p className={`
-                                text-sm text-gray-300 
-                                transition-all duration-300
-                                ${expandedDescriptions[rec.url] 
-                                  ? 'max-h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400/20 scrollbar-track-transparent' 
-                                  : 'h-[60px] overflow-hidden'
-                                }
-                                max-w-[280px] mx-auto
-                                pr-2
-                              `}>
-                                {rec.description}
-                              </p>
-                              {!expandedDescriptions[rec.url] && (
-                                <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900/60 to-transparent pointer-events-none" />
-                              )}
-                            </div>
+              {taskGroups.length > 0 ? (
+                <div className="space-y-12">
+                  {taskGroups.map((taskGroup, groupIndex) => (
+                    <div key={groupIndex} className="bg-white/5 backdrop-blur-lg rounded-xl p-8 shadow-lg">
+                      <div className="mb-8">
+                        <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                          {taskGroup.task}
+                        </h2>
+                        <p className="text-gray-200 text-lg mb-6">
+                          {taskGroup.description}
+                        </p>
+
+                        {/* 推薦理由と比較の表示 */}
+                        {(taskGroup.recommendation || taskGroup.comparison) && (
+                          <div className="bg-blue-500/10 rounded-lg p-6 border border-blue-500/20 mb-6">
+                            {taskGroup.recommendation && (
+                              <div className="mb-4">
+                                <h3 className="text-blue-400 font-semibold mb-2 flex items-center">
+                                  <Sparkles className="w-5 h-5 mr-2" />
+                                  おすすめの使い分け
+                                </h3>
+                                <p className="text-gray-200 whitespace-pre-line">
+                                  {taskGroup.recommendation}
+                                </p>
+                              </div>
+                            )}
+                            {taskGroup.comparison && (
+                              <div>
+                                <h3 className="text-blue-400 font-semibold mb-2 flex items-center">
+                                  <Scale className="w-5 h-5 mr-2" />
+                                  ツールの比較
+                                </h3>
+                                <p className="text-gray-200 whitespace-pre-line">
+                                  {taskGroup.comparison}
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        </div>
+                        )}
                       </div>
                       
-                      <CardContent className="p-6 bg-white dark:bg-gray-900">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
-                            <span className="text-sm font-semibold">{rec.price}</span>
-                          </div>
-                          
-                          <div>
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {rec.features.map((feature: string, i: number) => (
-                                <span 
-                                  key={i}
-                                  className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                                >
-                                  {feature}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
-                              <ul className="mt-2 space-y-1">
-                                {rec.pros.map((pro: string, i: number) => (
-                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
-                                    <span className="mr-2">✓</span> {pro}
-                                  </li>
-                                ))}
-                              </ul>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {taskGroup.tools.map((tool, toolIndex) => (
+                          <Card 
+                            key={`${groupIndex}-${toolIndex}`} 
+                            className="neumorphic overflow-hidden volumetric-light group relative"
+                          >
+                            <div className={`relative transition-all duration-300 ${
+                              expandedCard === `${tool.name}-${groupIndex}-${toolIndex}` ? 'h-auto' : 'h-48'
+                            }`}>
+                              <div 
+                                className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
+                                style={{
+                                  backgroundImage: `url(${imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`})`,
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                                  filter: 'blur(20px) brightness(0.7)',
+                                }}
+                              />
+                              
+                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
+                              
+                              <div className="relative p-6">
+                                <div className="text-center">
+                                  <img
+                                    src={imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`}
+                                    alt={tool.name}
+                                    className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
+                                    style={{
+                                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                      backdropFilter: 'blur(10px)',
+                                      WebkitBackdropFilter: 'blur(10px)',
+                                    }}
+                                  />
+                                  <h3 className="text-xl font-semibold text-white mb-3">{stripMarkdownBold(tool.name)}</h3>
+                                  <div 
+                                    className="relative cursor-pointer"
+                                    onClick={() => setExpandedCard(
+                                      expandedCard === `${tool.name}-${groupIndex}-${toolIndex}` 
+                                        ? null 
+                                        : `${tool.name}-${groupIndex}-${toolIndex}`
+                                    )}
+                                  >
+                                    <p className={`
+                                      text-sm text-gray-300 
+                                      transition-all duration-300
+                                      ${expandedCard === `${tool.name}-${groupIndex}-${toolIndex}`
+                                        ? 'max-h-none' 
+                                        : 'max-h-[60px] overflow-hidden'
+                                      }
+                                      whitespace-pre-line
+                                    `}>
+                                      {tool.description}
+                                    </p>
+                                    {expandedCard !== `${tool.name}-${groupIndex}-${toolIndex}` && (
+                                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-900 to-transparent" />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                             
-                            <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
-                              <ul className="mt-2 space-y-1">
-                                {rec.cons.map((con: string, i: number) => (
-                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
-                                    <span className="mr-2">•</span> {con}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                          
-                          <Button
-                            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                            onClick={() => window.open(rec.url, "_blank")}
-                          >
-                            使ってみる
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                            <CardContent className="p-6 bg-gray-900/60 backdrop-blur-md">
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-400">価格</span>
+                                  <span className="text-sm font-semibold text-gray-200">{tool.price || '価格情報なし'}</span>
+                                </div>
+                                
+                                <div>
+                                  <span className="text-sm font-medium text-gray-400">主な機能</span>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {(tool.features && tool.features.length > 0 ? tool.features : ['情報なし']).map((feature: string, i: number) => (
+                                      <span 
+                                        key={i}
+                                        className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30"
+                                      >
+                                        {feature}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <span className="text-sm font-medium text-gray-400">メリット</span>
+                                    <ul className="mt-2 space-y-1">
+                                      {(tool.pros && tool.pros.length > 0 ? tool.pros : ['情報なし']).map((pro: string, i: number) => (
+                                        <li key={i} className="text-sm flex items-center text-gray-300">
+                                          <span className="mr-2 text-green-400">✓</span> {pro}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                  
+                                  <div>
+                                    <span className="text-sm font-medium text-gray-400">デメリット</span>
+                                    <ul className="mt-2 space-y-1">
+                                      {(tool.cons && tool.cons.length > 0 ? tool.cons : ['情報なし']).map((con: string, i: number) => (
+                                        <li key={i} className="text-sm flex items-center text-gray-300">
+                                          <span className="mr-2 text-red-400">•</span> {con}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                                
+                                {tool.url && tool.url !== '#' ? (
+                                  <Button
+                                    className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                                    onClick={() => window.open(tool.url, "_blank")}
+                                  >
+                                    使ってみる
+                                  </Button>
+                                ) : (
+                                  <Button className="w-full mt-4" disabled>
+                                    リンク情報なし
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -420,26 +723,26 @@ export default function Home() {
                                 WebkitBackdropFilter: 'blur(10px)',
                               }}
                             />
-                            <h3 className="text-xl font-semibold text-white mb-2">{tool.name}</h3>
+                            <h3 className="text-xl font-semibold text-white mb-2">{stripMarkdownBold(tool.name)}</h3>
                             <p className="text-sm text-gray-300 line-clamp-2">{tool.description}</p>
                           </div>
                         </div>
                       </div>
                       
-                      <CardContent className="p-6 bg-white dark:bg-gray-900">
+                      <CardContent className="p-6 bg-gray-900/60 backdrop-blur-md">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
-                            <span className="text-sm font-semibold">{tool.price}</span>
+                            <span className="text-sm font-medium text-gray-400">価格</span>
+                            <span className="text-sm font-semibold text-gray-200">{tool.price || '価格情報なし'}</span>
                           </div>
                           
                           <div>
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
+                            <span className="text-sm font-medium text-gray-400">主な機能</span>
                             <div className="mt-2 flex flex-wrap gap-2">
-                              {tool.features.map((feature, i) => (
+                              {(tool.features && tool.features.length > 0 ? tool.features : ['情報なし']).map((feature, i) => (
                                 <span 
                                   key={i}
-                                  className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                  className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30"
                                 >
                                   {feature}
                                 </span>
@@ -449,10 +752,10 @@ export default function Home() {
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
+                              <span className="text-sm font-medium text-gray-400">メリット</span>
                               <ul className="mt-2 space-y-1">
-                                {tool.pros.map((pro, i) => (
-                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                {(tool.pros && tool.pros.length > 0 ? tool.pros : ['情報なし']).map((pro, i) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-300">
                                     <span className="mr-2">✓</span> {pro}
                                   </li>
                                 ))}
@@ -460,10 +763,10 @@ export default function Home() {
                             </div>
                             
                             <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
+                              <span className="text-sm font-medium text-gray-400">デメリット</span>
                               <ul className="mt-2 space-y-1">
-                                {tool.cons.map((con, i) => (
-                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
+                                {(tool.cons && tool.cons.length > 0 ? tool.cons : ['情報なし']).map((con, i) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-300">
                                     <span className="mr-2">•</span> {con}
                                   </li>
                                 ))}
@@ -471,12 +774,18 @@ export default function Home() {
                             </div>
                           </div>
                           
-                          <Button
-                            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                            onClick={() => window.open(tool.url, "_blank")}
-                          >
-                            使ってみる
-                          </Button>
+                          {tool.url && tool.url !== '#' ? (
+                            <Button
+                              className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                              onClick={() => window.open(tool.url, "_blank")}
+                            >
+                              使ってみる
+                            </Button>
+                          ) : (
+                            <Button className="w-full mt-4" disabled>
+                              リンク情報なし
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -542,7 +851,7 @@ export default function Home() {
                                 WebkitBackdropFilter: 'blur(10px)',
                               }}
                             />
-                            <h3 className="text-xl font-semibold text-white mb-2">{tool.name}</h3>
+                            <h3 className="text-xl font-semibold text-white mb-2">{stripMarkdownBold(tool.name)}</h3>
                             <div 
                               className="relative cursor-pointer"
                               onClick={() => setExpandedDescriptions(prev => ({
@@ -570,22 +879,20 @@ export default function Home() {
                         </div>
                       </div>
                       
-                      <CardContent className="p-6 bg-white dark:bg-gray-900">
+                      <CardContent className="p-6 bg-gray-900/60 backdrop-blur-md">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">価格</span>
-                            <span className="text-sm font-semibold">
-                              {tool.pricing.hasFree ? "無料" : "有料"} {tool.pricing.paidPlans[0]?.price ? `(${tool.pricing.paidPlans[0].price})` : ""}
-                            </span>
+                            <span className="text-sm font-medium text-gray-400">価格</span>
+                            <span className="text-sm font-semibold text-gray-200">{tool.price || '価格情報なし'}</span>
                           </div>
                           
                           <div>
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">主な機能</span>
+                            <span className="text-sm font-medium text-gray-400">主な機能</span>
                             <div className="mt-2 flex flex-wrap gap-2">
-                              {tool.features.map((feature: string, i: number) => (
+                              {(tool.features && tool.features.length > 0 ? tool.features : ['情報なし']).map((feature: string, i: number) => (
                                 <span 
                                   key={i}
-                                  className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                  className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30"
                                 >
                                   {feature}
                                 </span>
@@ -595,34 +902,40 @@ export default function Home() {
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">メリット</span>
+                              <span className="text-sm font-medium text-gray-400">メリット</span>
                               <ul className="mt-2 space-y-1">
-                                {tool.pros.map((pro: string, i: number) => (
-                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
-                                    <span className="mr-2">✓</span> {pro}
+                                {(tool.pros && tool.pros.length > 0 ? tool.pros : ['情報なし']).map((pro: string, i: number) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-300">
+                                    <span className="mr-2 text-green-400">✓</span> {pro}
                                   </li>
                                 ))}
                               </ul>
                             </div>
                             
                             <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">デメリット</span>
+                              <span className="text-sm font-medium text-gray-400">デメリット</span>
                               <ul className="mt-2 space-y-1">
-                                {tool.cons.map((con: string, i: number) => (
-                                  <li key={i} className="text-sm flex items-center text-gray-700 dark:text-gray-300">
-                                    <span className="mr-2">•</span> {con}
+                                {(tool.cons && tool.cons.length > 0 ? tool.cons : ['情報なし']).map((con: string, i: number) => (
+                                  <li key={i} className="text-sm flex items-center text-gray-300">
+                                    <span className="mr-2 text-red-400">•</span> {con}
                                   </li>
                                 ))}
                               </ul>
                             </div>
                           </div>
                           
-                          <Button
-                            className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                            onClick={() => window.open(tool.officialUrl, "_blank")}
-                          >
-                            使ってみる
-                          </Button>
+                          {tool.url && tool.url !== '#' ? (
+                            <Button
+                              className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                              onClick={() => window.open(tool.url, "_blank")}
+                            >
+                              使ってみる
+                            </Button>
+                          ) : (
+                            <Button className="w-full mt-4" disabled>
+                              リンク情報なし
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

@@ -14,6 +14,9 @@ const nextConfig = {
     
     return config;
   },
+  env: {
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+  },
 };
 
 module.exports = nextConfig;

@@ -1,67 +1,48 @@
 import { NextResponse } from 'next/server';
-import { generateToolDescription } from '@/lib/llm/generator';
-import { recommendTools } from '@/lib/llm/generator';
-import { RecommendationRequest, Recommendation } from '@/lib/types';
+import { getRecommendations } from '@/lib/llm';
 
 // Node.js Runtimeを使用することを明示
 export const runtime = 'nodejs';
 
-interface RecommendRequest {
-  needs: string[];
-}
-
-function validateRequest(data: any): data is RecommendRequest {
-  return (
-    Array.isArray(data.needs) &&
-    data.needs.every((n: any) => typeof n === 'string')
-  );
+interface RequestBody {
+  needs: string;
 }
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-
-    if (!validateRequest(data)) {
+    const body = await request.json();
+    
+    // 型チェックとバリデーション
+    if (!body || typeof body !== 'object') {
       return NextResponse.json(
-        { error: '必要なパラメータが不足しているか、形式が正しくありません' },
+        { error: '不正なリクエスト形式です' },
         { status: 400 }
       );
     }
 
-    const { needs } = data;
+    const { needs } = body as RequestBody;
 
-    // 推薦ロジックを使用してツールを取得
-    const recommendedTools = recommendTools(needs, [], [], '');
+    if (typeof needs !== 'string') {
+      return NextResponse.json(
+        { error: 'ニーズは文字列で入力してください' },
+        { status: 400 }
+      );
+    }
 
-    // 各ツールの説明を生成
-    const recommendations = await Promise.all(
-      recommendedTools.map(async (tool) => {
-        const query = `
-          ニーズ: ${needs.join(', ')}
-        `;
+    if (!needs.trim()) {
+      return NextResponse.json(
+        { error: 'ニーズを入力してください' },
+        { status: 400 }
+      );
+    }
 
-        const description = await generateToolDescription(query, tool);
-
-        return {
-          name: tool.name,
-          description: description,
-          url: tool.officialUrl,
-          price: tool.pricing.paidPlans[0]?.price || '無料',
-          features: tool.features,
-          pros: tool.pros,
-          cons: tool.cons,
-          category: tool.category,
-          subcategory: tool.subcategory,
-          imageUrl: tool.imageUrl
-        };
-      })
-    );
-    
-    return NextResponse.json({ recommendations });
+    const recommendations = await getRecommendations(needs.trim());
+    return NextResponse.json({ tasks: recommendations });
   } catch (error) {
     console.error('推薦APIでエラーが発生しました:', error);
+    const errorMessage = error instanceof Error ? error.message : 'AIツールの推薦中にエラーが発生しました';
     return NextResponse.json(
-      { error: '推薦の生成中にエラーが発生しました' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

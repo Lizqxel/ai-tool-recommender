@@ -1,22 +1,28 @@
 /**
  * LLMの設定インターフェース
- * @interface LLMConfig
  */
 export interface LLMConfig {
-  modelPath: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
+  prompt: {
+    system: string;
+  };
   generation: {
     maxTokens: number;
     temperature: number;
-    topP: number;
-  };
-  prompt: {
-    system: string;
-    user: string;
   };
 }
+
+/**
+ * デフォルトのLLM設定
+ */
+export const DEFAULT_LLM_CONFIG: LLMConfig = {
+  prompt: {
+    system: '',
+  },
+  generation: {
+    maxTokens: 2000,
+    temperature: 0.7,
+  },
+};
 
 /**
  * LLMの設定値
