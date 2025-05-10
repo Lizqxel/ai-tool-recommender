@@ -4,7 +4,7 @@
  */
 
 import { LLMConfig, DEFAULT_LLM_CONFIG } from './config';
-import { LlamaMaverickClient } from './llama';
+import { WebLLMClient } from './web-llm';
 
 /**
  * ユーザーのニーズを分析し、タスクを分解して最適なツールを推薦する
@@ -13,7 +13,7 @@ import { LlamaMaverickClient } from './llama';
  */
 export async function getRecommendations(needs: string) {
   try {
-    const client = new LlamaMaverickClient(DEFAULT_LLM_CONFIG);
+    const client = new WebLLMClient(DEFAULT_LLM_CONFIG);
     return await client.analyzeNeedsAndRecommendTools(needs);
   } catch (error) {
     console.error('Failed to get recommendations:', error);
@@ -22,7 +22,7 @@ export async function getRecommendations(needs: string) {
 }
 
 export function createLLMClient(config: LLMConfig = DEFAULT_LLM_CONFIG) {
-  return new LlamaMaverickClient(config);
+  return new WebLLMClient(config);
 }
 
-export { LlamaMaverickClient } from './llama'; 
+export { WebLLMClient } from './web-llm'; 

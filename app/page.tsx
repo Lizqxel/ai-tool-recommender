@@ -191,9 +191,57 @@ const categoryMapping: { [key: string]: string } = {
   "特殊分野": "生産性"
 };
 
-// ツール名やタイトルから**を除去するユーティリティ関数
-function stripMarkdownBold(text: string): string {
-  return text.replace(/^\*\*|\*\*$/g, '').replace(/\*\*/g, '');
+// ツール名の正規化（小文字化・全角半角・記号除去・trim）
+function normalizeToolName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[\s\-_.:：・]/g, '') // スペース・記号除去
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)) // 全角→半角
+    .trim();
+}
+
+// Levenshtein距離計算
+function levenshtein(a: string, b: string): number {
+  const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + 1
+        );
+      }
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+// ツール詳細取得（正規化・あいまい一致）
+function getBestToolDetails(toolName: string) {
+  const normName = normalizeToolName(toolName);
+  let best = null;
+  let minDist = Infinity;
+  for (const tool of aiTools) {
+    const normDbName = normalizeToolName(tool.name);
+    if (normDbName === normName) {
+      return tool; // 完全一致
+    }
+    // 部分一致
+    if (normDbName.includes(normName) || normName.includes(normDbName)) {
+      if (!best) best = tool;
+    }
+    // Levenshtein距離
+    const dist = levenshtein(normDbName, normName);
+    if (dist < minDist) {
+      minDist = dist;
+      best = tool;
+    }
+  }
+  return best;
 }
 
 function validateInputs(needs: string, budget: string, technicalLevel: string, priorities: string, limitations: string): string | null {
@@ -213,6 +261,94 @@ function validateInputs(needs: string, budget: string, technicalLevel: string, p
     return '制限事項を入力してください';
   }
   return null;
+}
+
+/**
+ * OpenRouter API経由でニーズ分析・タスク分解・ツール推薦を行う関数
+ * @param needs ユーザーのニーズ
+ * @returns 推論結果の配列（パース済み）
+ */
+async function analyzeNeedsAndRecommendTools(needs: string): Promise<any[]> {
+  const prompt = `あなたはAIツール推薦の専門家です。\nユーザーのニーズを分析し、必要なタスクに分解し、各タスクに最適なAIツールを推薦してください。\n必ず日本語のみで返答してください。\n以下の形式でMarkdownで回答してください：\n\n# タスク1: [タスク名]\n説明: [タスクの詳細説明]\n推薦ツール:\n- [ツール名1]\n  - 推薦理由: [このツールを推薦する理由]\n- [ツール名2]（複数の選択肢がある場合）\n  - 推薦理由: [このツールを推薦する理由]\n\n# タスク2: [タスク名]\n...\n\nユーザーのニーズ: ${needs}`;
+
+  const res = await fetch("/api/openrouter", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt,
+      model: "mistralai/mixtral-8x7b-instruct",
+    }),
+  });
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content || "";
+
+  if (!content) {
+    throw new Error("AIからの応答が空でした。もう一度お試しください。");
+  }
+
+  // Markdownをパースしてタスク分解情報を抽出（簡易実装）
+  const tasks: any[] = [];
+  const sections = content.split(/\n# /).filter(Boolean);
+  
+  if (sections.length === 0) {
+    throw new Error("AIからの応答を解析できませんでした。もう一度お試しください。");
+  }
+
+  for (const section of sections) {
+    const [taskLine, ...details] = section.split('\n');
+    const task = taskLine.replace(/^タスク\d*:?\s*/, '').trim();
+    const detailsText = details.join('\n');
+    const descriptionMatch = detailsText.match(/説明:\s*(.*?)(?=\n推薦ツール:|$)/);
+    const description = descriptionMatch ? descriptionMatch[1].trim() : '';
+    const toolsSection = detailsText.split('推薦ツール:')[1] || '';
+    const toolMatches = toolsSection.split('\n-').filter(Boolean);
+    
+    if (toolMatches.length === 0) {
+      console.warn(`タスク「${task}」の推薦ツールが見つかりませんでした。`);
+      continue;
+    }
+
+    const recommendedTools = toolMatches.map((toolMatch: string) => {
+      const lines = toolMatch.trim().split('\n');
+      const name = lines[0].trim();
+      const reason = lines
+        .filter((line: string) => line.includes('推薦理由:'))
+        .map((line: string) => line.replace(/\s*-\s*推薦理由:\s*/, '').trim())
+        .join(' ');
+      
+      if (!name || !reason) {
+        console.warn(`ツール「${name}」の情報が不完全です。`);
+        return null;
+      }
+
+      // aiToolsから詳細を検索
+      const toolDetails = getBestToolDetails(name);
+      return {
+        name,
+        reason,
+        details: toolDetails
+      };
+    }).filter(Boolean);
+
+    if (recommendedTools.length > 0) {
+      tasks.push({
+        task,
+        description,
+        recommendedTools
+      });
+    }
+  }
+
+  if (tasks.length === 0) {
+    throw new Error("AIからの応答から有効なタスク情報を抽出できませんでした。もう一度お試しください。");
+  }
+
+  return tasks;
+}
+
+// ツール名やタイトルから**を除去するユーティリティ関数
+function stripMarkdownBold(text: string): string {
+  return text.replace(/^\*\*|\*\*$/g, '').replace(/\*\*/g, '');
 }
 
 export default function Home() {
@@ -299,140 +435,70 @@ export default function Home() {
       };
     }
     
-    return null;
+    // 必ず何かしら返す
+    return {
+      name: toolName,
+      description: "情報なし",
+      url: "#",
+      price: "情報なし",
+      features: [],
+      pros: [],
+      cons: [],
+      category: "情報なし"
+    };
   };
 
   // handleSearch関数を修正
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
+    let stepInterval: NodeJS.Timeout | undefined;
     try {
       setIsLoading(true);
       setError("");
       setLoadingStep(0);
       setTaskGroups([]);
 
-      const stepInterval = setInterval(() => {
+      stepInterval = setInterval(() => {
         setLoadingStep(prev => (prev < loadingSteps.length - 1 ? prev + 1 : prev));
       }, 1500);
-      
-      const response = await fetch('/api/recommend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ needs: searchQuery.trim() })
-      });
 
-      clearInterval(stepInterval);
+      // ユーザーのニーズを分析し、タスクを分解して最適なツールを推薦
+      const taskBreakdown = await analyzeNeedsAndRecommendTools(searchQuery.trim());
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '検索中にエラーが発生しました');
+      if (stepInterval) {
+        clearInterval(stepInterval);
       }
 
-      const data = await response.json();
-      
-      if (data.tasks && Array.isArray(data.tasks)) {
-        const processedTaskGroups = await Promise.all(data.tasks.map(async (task: TaskResponse) => {
-          // 比較文をツール情報から分離
-          const comparisonTools = task.recommendedTools.filter(tool => 
-            tool.name.includes('と') && tool.name.includes('は、')
-          );
-          
-          // 比較文を結合
-          const comparison = comparisonTools
-            .map(tool => tool.reason)
-            .join('\n\n');
-          
-          // 通常のツール情報を処理
-          const uniqueTools = new Map();
-          const normalTools = task.recommendedTools.filter(tool => 
-            !tool.name.includes('と') && !tool.name.includes('は、')
-          );
+      // タスクグループを設定
+      setTaskGroups(taskBreakdown.map((task: any) => ({
+        task: task.task,
+        description: task.description,
+        tools: task.recommendedTools.map((tool: any) => ({
+          name: tool.name,
+          description: tool.reason,
+          url: tool.details?.officialUrl || '#',
+          price: tool.details?.pricing?.hasFree 
+            ? '無料版あり' 
+            : tool.details?.pricing?.paidPlans?.[0]?.price || '価格情報なし',
+          features: tool.details?.features || [],
+          pros: tool.details?.pros || [],
+          cons: tool.details?.cons || []
+        }))
+      })));
 
-          for (const tool of normalTools) {
-            if (!uniqueTools.has(tool.name)) {
-              // ai_tools.jsonから情報を取得
-              let toolDetails = getToolDetails(tool.name);
-              
-              // 情報が見つからない場合、LLMから詳細情報を取得
-              if (!toolDetails) {
-                try {
-                  const detailsResponse = await fetch('/api/tool-details', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ toolName: tool.name })
-                  });
-                  
-                  if (detailsResponse.ok) {
-                    const details = await detailsResponse.json();
-                    toolDetails = details;
-                  }
-                } catch (error) {
-                  console.error(`Failed to fetch details for ${tool.name}:`, error);
-                }
-              }
-              
-              uniqueTools.set(tool.name, {
-                name: tool.name,
-                description: tool.reason,
-                url: toolDetails?.url || '#',
-                price: toolDetails?.price || '価格情報なし',
-                features: toolDetails?.features || [],
-                pros: toolDetails?.pros || [],
-                cons: toolDetails?.cons || []
-              });
-            } else {
-              // 既存の説明文に新しい理由を追加
-              const existingTool = uniqueTools.get(tool.name);
-              if (!existingTool.description.includes(tool.reason)) {
-                existingTool.description = `${existingTool.description}\n\n${tool.reason}`;
-              }
-            }
-          }
-          
-          // 推薦文を取得
-          let recommendation;
-          try {
-            const recommendationResponse = await fetch('/api/generate-recommendation', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                task: task.task,
-                tools: normalTools.map(tool => tool.name)
-              })
-            });
-
-            if (recommendationResponse.ok) {
-              const data = await recommendationResponse.json();
-              recommendation = data.recommendation;
-            }
-          } catch (error) {
-            console.error('推薦文の取得に失敗しました:', error);
-          }
-          
-          return {
-            task: task.task,
-            description: task.description,
-            tools: Array.from(uniqueTools.values()),
-            comparison: comparison || undefined,
-            recommendation: recommendation || undefined
-          };
-        }));
-        
-        setTaskGroups(processedTaskGroups);
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '検索中にエラーが発生しました');
+      if (stepInterval) {
+        clearInterval(stepInterval);
+      }
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : '検索中にエラーが発生しました。もう一度お試しください。';
+      setError(errorMessage);
       setTaskGroups([]);
+      console.error('検索エラー:', err);
     } finally {
       setIsLoading(false);
-      setLoadingStep(0);
     }
   };
 

@@ -22,7 +22,7 @@ AIツール推薦システムは、ユーザーが自然言語で入力した内
 ## 開発中の機能
 
 1. **LLM統合**
-   - Ministral-8B-Instruct-2410の導入
+   - tiny-llamaの導入
    - 自然言語による検索・推薦機能
    - 推薦理由の自然言語での説明
 
@@ -36,7 +36,7 @@ AIツール推薦システムは、ユーザーが自然言語で入力した内
 - **フロントエンド**: Next.js 15.3.1, React, TailwindCSS
 - **バックエンド**: Next.js API Routes
 - **データベース**: JSONベースのローカルデータベース
-- **LLM**: Ministral-8B-Instruct-2410（実装予定）
+- **LLM**: tiny-llama（実装予定）
 - **デプロイ**: Vercel（予定）
 
 ## プロジェクト構造
@@ -90,3 +90,4 @@ npm run dev
 ## ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。
+Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)

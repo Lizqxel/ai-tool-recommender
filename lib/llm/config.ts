@@ -1,13 +1,14 @@
 /**
- * LLMの設定インターフェース
+ * LLMの設定を定義するインターフェース
  */
 export interface LLMConfig {
-  prompt: {
-    system: string;
-  };
   generation: {
     maxTokens: number;
     temperature: number;
+  };
+  prompt?: {
+    system?: string;
+    user?: string;
   };
 }
 
