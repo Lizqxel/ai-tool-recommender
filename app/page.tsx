@@ -20,7 +20,7 @@ import { ChatPanel } from '@/app/components/ChatPanel';
 import aiTools from '@/data/ai_tools.json';
 import Image from 'next/image';
 import { motion } from "framer-motion";
-import { analyzeTask, recommendTools, generateComparison, generateRecommendation } from '@/lib/utils/task-analyzer';
+import { analyzeTask, recommendTools, generateUsageTags } from '@/lib/utils/task-analyzer';
 
 interface RecommendedTool {
   name: string;
@@ -268,6 +268,179 @@ function stripMarkdownBold(text: string): string {
   return text.replace(/^\*\*|\*\*$/g, '').replace(/\*\*/g, '');
 }
 
+// ソート順の型定義
+type SortOrder = 'recommend' | 'price';
+
+// ツールカードのコンポーネント
+const ToolCard = ({ 
+  tool, 
+  index, 
+  isTopThree,
+  imageUrls,
+  usageTag
+}: { 
+  tool: any; 
+  index: number; 
+  isTopThree: boolean;
+  imageUrls: Record<string, string>;
+  usageTag?: string;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  // URLの検証
+  const isValidUrl = tool.url && tool.url !== '#';
+  const imageUrl = isValidUrl 
+    ? (imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`)
+    : '/placeholder.png';
+  
+  return (
+    <Card 
+      className={`neumorphic overflow-hidden volumetric-light group relative ${
+        isTopThree ? 'border-2 border-blue-500/50 shadow-lg' : ''
+      }`}
+    >
+      {/* 用途タグバッジ */}
+      {usageTag && (
+        <div className="absolute left-4 top-4 z-10">
+          <span className="px-3 py-1 rounded-full bg-blue-600/80 text-white text-xs font-bold shadow">
+            {usageTag}
+          </span>
+        </div>
+      )}
+      {isTopThree && (
+        <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg z-10">
+          {index + 1}
+        </div>
+      )}
+      
+      <div className={`relative transition-all duration-300 ${
+        expanded ? 'h-auto' : 'h-48'
+      }`}>
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
+          style={{
+            backgroundImage: `url(${imageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'blur(20px) brightness(0.7)',
+          }}
+        />
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
+        
+        <div className="relative p-6">
+          <div className="text-center">
+            <img
+              src={imageUrl}
+              alt={tool.name}
+              className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+              }}
+            />
+            <h3 className="text-xl font-semibold text-white mb-3">{stripMarkdownBold(tool.name)}</h3>
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => setExpanded(!expanded)}
+            >
+              <p className={`
+                text-sm text-gray-300 
+                transition-all duration-300
+                ${expanded ? 'max-h-none' : 'max-h-[60px] overflow-hidden'}
+                whitespace-pre-line
+              `}>
+                {tool.description}
+              </p>
+              {!expanded && (
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-900 to-transparent" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <CardContent className="p-6 bg-gray-900/60 backdrop-blur-md">
+        <div className="space-y-4">
+          {/* おすすめ度の表示 */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-400">おすすめ度</span>
+            <div className="flex items-center">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < (tool.score || 0)
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-400'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-400">価格</span>
+            <span className="text-sm font-semibold text-gray-200">{tool.price || '価格情報なし'}</span>
+          </div>
+          
+          <div>
+            <span className="text-sm font-medium text-gray-400">主な機能</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(tool.features && tool.features.length > 0 ? tool.features : ['情報なし']).map((feature: string, i: number) => (
+                <span 
+                  key={i}
+                  className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30"
+                >
+                  {feature}
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-sm font-medium text-gray-400">メリット</span>
+              <ul className="mt-2 space-y-1">
+                {(tool.pros && tool.pros.length > 0 ? tool.pros : ['情報なし']).map((pro: string, i: number) => (
+                  <li key={i} className="text-sm flex items-center text-gray-300">
+                    <span className="mr-2 text-green-400">✓</span> {pro}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <span className="text-sm font-medium text-gray-400">デメリット</span>
+              <ul className="mt-2 space-y-1">
+                {(tool.cons && tool.cons.length > 0 ? tool.cons : ['情報なし']).map((con: string, i: number) => (
+                  <li key={i} className="text-sm flex items-center text-gray-300">
+                    <span className="mr-2 text-red-400">•</span> {con}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          {tool.url && tool.url !== '#' ? (
+            <Button
+              className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+              onClick={() => window.open(tool.url, "_blank")}
+            >
+              使ってみる
+            </Button>
+          ) : (
+            <Button className="w-full mt-4" disabled>
+              リンク情報なし
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -288,6 +461,8 @@ export default function Home() {
   const [loadingStep, setLoadingStep] = useState(0);
   const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('recommend');
+  const [usageTags, setUsageTags] = useState<string[]>([]);
   const loadingSteps = [
     "ニーズの分析中...",
     "タスクの分解中...",
@@ -310,8 +485,14 @@ export default function Home() {
     if (!mounted) return;
     const urls: Record<string, string> = {};
     for (const tool of tools) {
+      if (!tool.url || tool.url === '#') continue;
       if (!imageUrls[tool.url]) {
-        urls[tool.url] = await getOGPImage(tool.url);
+        try {
+          urls[tool.url] = await getOGPImage(tool.url);
+        } catch (error) {
+          console.warn(`Failed to fetch OGP for ${tool.url}:`, error);
+          urls[tool.url] = `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`;
+        }
       }
     }
     setImageUrls(prev => ({ ...prev, ...urls }));
@@ -365,6 +546,23 @@ export default function Home() {
     };
   };
 
+  // ツールのソート関数
+  const sortTools = (tools: any[]) => {
+    return [...tools].sort((a, b) => {
+      if (sortOrder === 'recommend') {
+        return (b.score || 0) - (a.score || 0);
+      } else {
+        // 価格順（無料版あり > 有料版のみ > 価格情報なし）
+        const getPriceScore = (tool: any) => {
+          if (tool.details?.pricing?.hasFree) return 2;
+          if (tool.details?.pricing?.paidPlans?.length) return 1;
+          return 0;
+        };
+        return getPriceScore(b) - getPriceScore(a);
+      }
+    });
+  };
+
   // handleSearch関数を修正
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -384,26 +582,26 @@ export default function Home() {
       const taskResponse = analyzeTask(searchQuery.trim());
       const availableTools = aiTools;
       const recommendedTools = recommendTools(taskResponse, availableTools);
-      const comparison = generateComparison(recommendedTools);
-      const recommendation = generateRecommendation(recommendedTools, taskResponse);
-
+      const tags = generateUsageTags(recommendedTools);
+      setUsageTags(tags);
       setTaskGroups([
         {
           task: searchQuery.trim(),
           description: searchQuery.trim(),
-          tools: recommendedTools.map((tool: any) => ({
+          tools: sortTools(recommendedTools.map((tool: any) => ({
             name: tool.name,
             description: tool.reason,
-            url: tool.details?.officialUrl || tool.details?.officialUrl || '#',
+            score: tool.score,
+            url: tool.details?.officialUrl || '#',
             price: tool.details?.pricing?.hasFree
               ? '無料版あり'
               : tool.details?.pricing?.paidPlans?.[0]?.price || '価格情報なし',
             features: tool.details?.features || [],
             pros: tool.details?.pros || [],
             cons: tool.details?.cons || []
-          })),
-          comparison,
-          recommendation
+          }))),
+          comparison: '',
+          recommendation: ''
         }
       ]);
 
@@ -555,126 +753,15 @@ export default function Home() {
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {taskGroup.tools.map((tool, toolIndex) => (
-                          <Card 
-                            key={`${groupIndex}-${toolIndex}`} 
-                            className="neumorphic overflow-hidden volumetric-light group relative"
-                          >
-                            <div className={`relative transition-all duration-300 ${
-                              expandedCard === `${tool.name}-${groupIndex}-${toolIndex}` ? 'h-auto' : 'h-48'
-                            }`}>
-                              <div 
-                                className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-900/40"
-                                style={{
-                                  backgroundImage: `url(${imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`})`,
-                                  backgroundSize: 'cover',
-                                  backgroundPosition: 'center',
-                                  filter: 'blur(20px) brightness(0.7)',
-                                }}
-                              />
-                              
-                              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
-                              
-                              <div className="relative p-6">
-                                <div className="text-center">
-                                  <img
-                                    src={imageUrls[tool.url] || `https://www.google.com/s2/favicons?domain=${tool.url}&sz=128`}
-                                    alt={tool.name}
-                                    className="w-16 h-16 mx-auto mb-4 rounded-xl shadow-2xl transition-transform duration-300 group-hover:scale-110"
-                                    style={{
-                                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                      backdropFilter: 'blur(10px)',
-                                      WebkitBackdropFilter: 'blur(10px)',
-                                    }}
-                                  />
-                                  <h3 className="text-xl font-semibold text-white mb-3">{stripMarkdownBold(tool.name)}</h3>
-                                  <div 
-                                    className="relative cursor-pointer"
-                                    onClick={() => setExpandedCard(
-                                      expandedCard === `${tool.name}-${groupIndex}-${toolIndex}` 
-                                        ? null 
-                                        : `${tool.name}-${groupIndex}-${toolIndex}`
-                                    )}
-                                  >
-                                    <p className={`
-                                      text-sm text-gray-300 
-                                      transition-all duration-300
-                                      ${expandedCard === `${tool.name}-${groupIndex}-${toolIndex}`
-                                        ? 'max-h-none' 
-                                        : 'max-h-[60px] overflow-hidden'
-                                      }
-                                      whitespace-pre-line
-                                    `}>
-                                      {tool.description}
-                                    </p>
-                                    {expandedCard !== `${tool.name}-${groupIndex}-${toolIndex}` && (
-                                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-900 to-transparent" />
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <CardContent className="p-6 bg-gray-900/60 backdrop-blur-md">
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-400">価格</span>
-                                  <span className="text-sm font-semibold text-gray-200">{tool.price || '価格情報なし'}</span>
-                                </div>
-                                
-                                <div>
-                                  <span className="text-sm font-medium text-gray-400">主な機能</span>
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {(tool.features && tool.features.length > 0 ? tool.features : ['情報なし']).map((feature: string, i: number) => (
-                                      <span 
-                                        key={i}
-                                        className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30"
-                                      >
-                                        {feature}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <span className="text-sm font-medium text-gray-400">メリット</span>
-                                    <ul className="mt-2 space-y-1">
-                                      {(tool.pros && tool.pros.length > 0 ? tool.pros : ['情報なし']).map((pro: string, i: number) => (
-                                        <li key={i} className="text-sm flex items-center text-gray-300">
-                                          <span className="mr-2 text-green-400">✓</span> {pro}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                  
-                                  <div>
-                                    <span className="text-sm font-medium text-gray-400">デメリット</span>
-                                    <ul className="mt-2 space-y-1">
-                                      {(tool.cons && tool.cons.length > 0 ? tool.cons : ['情報なし']).map((con: string, i: number) => (
-                                        <li key={i} className="text-sm flex items-center text-gray-300">
-                                          <span className="mr-2 text-red-400">•</span> {con}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                </div>
-                                
-                                {tool.url && tool.url !== '#' ? (
-                                  <Button
-                                    className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    onClick={() => window.open(tool.url, "_blank")}
-                                  >
-                                    使ってみる
-                                  </Button>
-                                ) : (
-                                  <Button className="w-full mt-4" disabled>
-                                    リンク情報なし
-                                  </Button>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
+                        {taskGroup.tools.map((tool, index) => (
+                          <ToolCard
+                            key={tool.name}
+                            tool={tool}
+                            index={index}
+                            isTopThree={index < 3}
+                            imageUrls={imageUrls}
+                            usageTag={usageTags[index]}
+                          />
                         ))}
                       </div>
                     </div>

@@ -8,6 +8,7 @@ import { AITool } from './ai-tool';
 export interface TaskResponse {
   task: string;
   description: string;
+  categories: string[];
   recommendedTools: RecommendedTool[];
   comparison?: string;
   recommendation?: string;
@@ -16,7 +17,20 @@ export interface TaskResponse {
 export interface RecommendedTool {
   name: string;
   reason: string;
-  details?: AITool;
+  score?: number; // おすすめ度（1-5）
+  details?: {
+    description?: string;
+    officialUrl?: string;
+    pricing?: {
+      hasFree?: boolean;
+      paidPlans?: Array<{
+        price?: string;
+      }>;
+    };
+    features?: string[];
+    pros?: string[];
+    cons?: string[];
+  };
 }
 
 export interface TaskGroup {

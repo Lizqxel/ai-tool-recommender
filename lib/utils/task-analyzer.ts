@@ -58,9 +58,15 @@ export function analyzeTask(task: string): TaskResponse {
     }
   });
 
+  // カテゴリが見つからない場合は「その他」を追加
+  if (categories.size === 0) {
+    categories.add('その他');
+  }
+
   return {
     task,
     description: task,
+    categories: Array.from(categories),
     recommendedTools: [],
     comparison: '',
     recommendation: ''
@@ -68,22 +74,50 @@ export function analyzeTask(task: string): TaskResponse {
 }
 
 /**
- * タスクに基づいてツールを推薦
+ * ツールのおすすめ度を計算（1-5のスコア）
+ * @param tool ツール情報
  * @param taskResponse タスク分析結果
- * @param availableTools 利用可能なツールのリスト
- * @returns 推薦ツールのリスト
+ * @returns おすすめ度（1-5）
  */
-export function recommendTools(
-  taskResponse: TaskResponse,
-  availableTools: AITool[]
-): RecommendedTool[] {
-  const recommendedTools: RecommendedTool[] = [];
+function calculateRecommendationScore(tool: AITool, taskResponse: TaskResponse): number {
+  let score = 0;
+  // 機能の充実度（最大1.5点）
+  const featureScore = Math.min(tool.features.length / 3, 1.5);
+  score += featureScore;
+  // メリット/デメリットのバランス（最大1点）
+  const prosConsRatio = tool.pros.length / ((tool.cons.length || 0) + 1);
+  score += Math.min(prosConsRatio, 1);
+  // 価格のコストパフォーマンス（最大0.7点）
+  const hasFree = tool.pricing.hasFree;
+  const hasPaid = tool.pricing.paidPlans && tool.pricing.paidPlans.length > 0;
+  if (hasFree && hasPaid) score += 0.7;
+  else if (hasFree) score += 0.7;
+  else if (hasPaid) score += 0.3;
+  // カテゴリとの関連性（最大1点）
+  const categoryMatch = taskResponse.categories.some((cat: string) => 
+    tool.category.toLowerCase().includes(cat.toLowerCase())
+  );
+  if (categoryMatch) score += 1;
+  // 1-5のスコアに変換（切り捨て）
+  return Math.min(Math.max(Math.floor(score), 1), 5);
+}
+
+/**
+ * ツールを推薦し、おすすめ度を計算
+ * @param taskResponse タスク分析結果
+ * @param availableTools 利用可能なツール一覧
+ * @returns 推薦ツール一覧（おすすめ度付き）
+ */
+export function recommendTools(taskResponse: TaskResponse, availableTools: AITool[]): RecommendedTool[] {
+  const categories = taskResponse.categories.map((cat: string) => cat.toLowerCase());
   const taskKeywords = taskResponse.task.toLowerCase().split(/\s+/);
 
-  availableTools.forEach(tool => {
-    let score = 0;
-    // ツールの特徴や説明文との関連性をスコア化
-    const toolText = [
+  let recommendedTools = availableTools.filter(tool => {
+    const toolCategory = tool.category.toLowerCase();
+    if (categories.some((cat: string) => toolCategory.includes(cat) || cat.includes(toolCategory))) {
+      return true;
+    }
+    const text = [
       tool.name,
       tool.description,
       ...(tool.features || []),
@@ -91,101 +125,57 @@ export function recommendTools(
       ...(tool.pros || []),
       ...(tool.cons || [])
     ].join(' ').toLowerCase();
-    taskKeywords.forEach((keyword: string) => {
-      if (toolText.includes(keyword)) {
-        score += 1;
+    return taskKeywords.some((keyword: string) => text.includes(keyword));
+  }).map(tool => {
+    const score = calculateRecommendationScore(tool, taskResponse);
+    
+    // descriptionから理由を生成
+    let reason = tool.description;
+    // 説明文が長すぎる場合は最初の文だけを使用
+    if (reason.length > 100) {
+      reason = reason.split(/[。.!?]/)[0] + '。';
+    }
+
+    return {
+      name: tool.name,
+      reason: reason,
+      score: score,
+      details: {
+        description: tool.description,
+        officialUrl: tool.officialUrl,
+        pricing: tool.pricing,
+        features: tool.features,
+        pros: tool.pros,
+        cons: tool.cons
       }
-    });
-    // スコアが閾値を超える場合に推薦リストに追加
-    if (score > 0) {
-      recommendedTools.push({
-        name: tool.name,
-        reason: `タスク「${taskResponse.task}」に最適なツールです。`,
-        details: tool
-      });
-    }
-  });
+    };
+  }).sort((a, b) => (b.score || 0) - (a.score || 0));
 
-  // スコアに基づいてソート
-  return recommendedTools.sort((a, b) => {
-    const scoreA = calculateToolScore(a, taskResponse);
-    const scoreB = calculateToolScore(b, taskResponse);
-    return scoreB - scoreA;
-  });
-}
-
-/**
- * ツールのスコアを計算
- * @param tool ツール情報
- * @param taskResponse タスク分析結果
- * @returns スコア
- */
-function calculateToolScore(tool: RecommendedTool, taskResponse: TaskResponse): number {
-  let score = 0;
-  const taskKeywords = taskResponse.task.toLowerCase().split(/\s+/);
-  const toolText = [
-    tool.name,
-    tool.details?.description || '',
-    ...(tool.details?.features || []),
-    ...(tool.details?.useCases || []),
-    ...(tool.details?.pros || []),
-    ...(tool.details?.cons || [])
-  ].join(' ').toLowerCase();
-  taskKeywords.forEach((keyword: string) => {
-    if (toolText.includes(keyword)) {
-      score += 1;
-    }
-  });
-  return score;
-}
-
-/**
- * ツールの比較情報を生成
- * @param tools 推薦ツールのリスト
- * @returns 比較情報
- */
-export function generateComparison(tools: RecommendedTool[]): string {
-  if (tools.length === 0) return '';
-  if (tools.length === 1) return `${tools[0].name}が最適な選択肢です。`;
-
-  const comparison = tools.map((tool, index) => {
-    const pros = tool.details?.pros?.join('、') || '';
-    const cons = tool.details?.cons?.join('、') || '';
-    return `${index + 1}. ${tool.name}：${pros}。ただし、${cons}。`;
-  }).join('\n');
-
-  return comparison;
-}
-
-/**
- * 最終的な推薦文を生成
- * @param tools 推薦ツールのリスト
- * @param taskResponse タスク分析結果
- * @returns 推薦文
- */
-export function generateRecommendation(
-  tools: RecommendedTool[],
-  taskResponse: TaskResponse
-): string {
-  if (tools.length === 0) {
-    return 'タスクに適したツールが見つかりませんでした。';
+  // 1位は必ず★5にする
+  if (recommendedTools.length > 0) {
+    recommendedTools[0].score = 5;
   }
 
-  const bestTool = tools[0];
-  const comparison = generateComparison(tools);
+  return recommendedTools;
+}
 
-  return `
-タスク「${taskResponse.task}」に対して、以下のツールをお勧めします：
+/**
+ * ツールごとの用途タグを生成
+ * @param tools 推薦ツールのリスト
+ * @returns 用途タグ配列
+ */
+export function generateUsageTags(tools: RecommendedTool[]): string[] {
+  if (tools.length === 0) return [];
+  // 例: 主要な特徴やカテゴリをタグ化
+  return tools.map(tool => {
+    if (tool.details?.features && tool.details.features.length > 0) {
+      return tool.details.features[0];
+    }
+    if (tool.details?.description) {
+      return tool.details.description.split(/[。.!?]/)[0];
+    }
+    return tool.name;
+  });
+}
 
-${comparison}
-
-特に${bestTool.name}は、${bestTool.reason}
-${bestTool.details?.description || ''}
-
-詳細な機能：
-${bestTool.details?.features?.join('、') || ''}
-
-注意点：
-${bestTool.details?.cons?.join('、') || ''}
-`.trim();
-} 
+// 旧: generateComparison, generateRecommendationは今後使わない 
