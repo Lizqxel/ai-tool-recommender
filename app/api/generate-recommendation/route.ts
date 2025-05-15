@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { LlamaMaverickClient } from '@/lib/llm';
-import { DEFAULT_LLM_CONFIG } from '@/lib/llm/config';
+import { analyzeTask, recommendTools, generateRecommendation } from '@/lib/utils/task-analyzer';
+import aiTools from '@/data/ai_tools_new.json';
 
 export async function POST(request: Request) {
   try {
@@ -13,22 +13,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const llm = new LlamaMaverickClient(DEFAULT_LLM_CONFIG);
-    const prompt = `
-タスク「${task}」に関して、以下のAIツールの具体的な使い分けを説明してください：
-
-ツール：${tools.join(', ')}
-
-以下の形式で回答してください：
-- どのような場合にどのツールを使うべきか
-- 各ツールの特徴的な使用シーン
-- 予算や技術レベルによる選択基準
-`;
-
-    const response = await llm.analyzeNeedsAndRecommendTools(prompt);
-    const recommendation = Array.isArray(response) && response.length > 0
-      ? response[0].description
-      : undefined;
+    // タスクの分析
+    const taskResponse = analyzeTask(task);
+    
+    // 利用可能なツールのフィルタリング
+    const availableTools = aiTools.filter(tool => tools.includes(tool.name));
+    
+    // ツールの推薦
+    const recommendedTools = recommendTools(taskResponse, availableTools);
+    
+    // 推薦文の生成
+    const recommendation = generateRecommendation(recommendedTools, taskResponse);
 
     return NextResponse.json({ recommendation });
   } catch (error) {

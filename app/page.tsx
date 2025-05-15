@@ -20,7 +20,7 @@ import { ChatPanel } from '@/app/components/ChatPanel';
 import aiTools from '@/data/ai_tools.json';
 import Image from 'next/image';
 import { motion } from "framer-motion";
-import { DEFAULT_LLM_CONFIG } from '@/lib/llm/config';
+import { analyzeTask, recommendTools, generateComparison, generateRecommendation } from '@/lib/utils/task-analyzer';
 
 interface RecommendedTool {
   name: string;
@@ -263,89 +263,6 @@ function validateInputs(needs: string, budget: string, technicalLevel: string, p
   return null;
 }
 
-/**
- * OpenRouter API経由でニーズ分析・タスク分解・ツール推薦を行う関数
- * @param needs ユーザーのニーズ
- * @returns 推論結果の配列（パース済み）
- */
-async function analyzeNeedsAndRecommendTools(needs: string): Promise<any[]> {
-  const prompt = `あなたはAIツール推薦の専門家です。\nユーザーのニーズを分析し、必要なタスクに分解し、各タスクに最適なAIツールを推薦してください。\n必ず日本語のみで返答してください。\n以下の形式でMarkdownで回答してください：\n\n# タスク1: [タスク名]\n説明: [タスクの詳細説明]\n推薦ツール:\n- [ツール名1]\n  - 推薦理由: [このツールを推薦する理由]\n- [ツール名2]（複数の選択肢がある場合）\n  - 推薦理由: [このツールを推薦する理由]\n\n# タスク2: [タスク名]\n...\n\nユーザーのニーズ: ${needs}`;
-
-  const res = await fetch("/api/openrouter", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt,
-      model: "mistralai/mixtral-8x7b-instruct",
-    }),
-  });
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content || "";
-
-  if (!content) {
-    throw new Error("AIからの応答が空でした。もう一度お試しください。");
-  }
-
-  // Markdownをパースしてタスク分解情報を抽出（簡易実装）
-  const tasks: any[] = [];
-  const sections = content.split(/\n# /).filter(Boolean);
-  
-  if (sections.length === 0) {
-    throw new Error("AIからの応答を解析できませんでした。もう一度お試しください。");
-  }
-
-  for (const section of sections) {
-    const [taskLine, ...details] = section.split('\n');
-    const task = taskLine.replace(/^タスク\d*:?\s*/, '').trim();
-    const detailsText = details.join('\n');
-    const descriptionMatch = detailsText.match(/説明:\s*(.*?)(?=\n推薦ツール:|$)/);
-    const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-    const toolsSection = detailsText.split('推薦ツール:')[1] || '';
-    const toolMatches = toolsSection.split('\n-').filter(Boolean);
-    
-    if (toolMatches.length === 0) {
-      console.warn(`タスク「${task}」の推薦ツールが見つかりませんでした。`);
-      continue;
-    }
-
-    const recommendedTools = toolMatches.map((toolMatch: string) => {
-      const lines = toolMatch.trim().split('\n');
-      const name = lines[0].trim();
-      const reason = lines
-        .filter((line: string) => line.includes('推薦理由:'))
-        .map((line: string) => line.replace(/\s*-\s*推薦理由:\s*/, '').trim())
-        .join(' ');
-      
-      if (!name || !reason) {
-        console.warn(`ツール「${name}」の情報が不完全です。`);
-        return null;
-      }
-
-      // aiToolsから詳細を検索
-      const toolDetails = getBestToolDetails(name);
-      return {
-        name,
-        reason,
-        details: toolDetails
-      };
-    }).filter(Boolean);
-
-    if (recommendedTools.length > 0) {
-      tasks.push({
-        task,
-        description,
-        recommendedTools
-      });
-    }
-  }
-
-  if (tasks.length === 0) {
-    throw new Error("AIからの応答から有効なタスク情報を抽出できませんでした。もう一度お試しください。");
-  }
-
-  return tasks;
-}
-
 // ツール名やタイトルから**を除去するユーティリティ関数
 function stripMarkdownBold(text: string): string {
   return text.replace(/^\*\*|\*\*$/g, '').replace(/\*\*/g, '');
@@ -463,36 +380,42 @@ export default function Home() {
         setLoadingStep(prev => (prev < loadingSteps.length - 1 ? prev + 1 : prev));
       }, 1500);
 
-      // ユーザーのニーズを分析し、タスクを分解して最適なツールを推薦
-      const taskBreakdown = await analyzeNeedsAndRecommendTools(searchQuery.trim());
+      // AI非依存の自作分解・推薦ロジック
+      const taskResponse = analyzeTask(searchQuery.trim());
+      const availableTools = aiTools;
+      const recommendedTools = recommendTools(taskResponse, availableTools);
+      const comparison = generateComparison(recommendedTools);
+      const recommendation = generateRecommendation(recommendedTools, taskResponse);
+
+      setTaskGroups([
+        {
+          task: searchQuery.trim(),
+          description: searchQuery.trim(),
+          tools: recommendedTools.map((tool: any) => ({
+            name: tool.name,
+            description: tool.reason,
+            url: tool.details?.officialUrl || tool.details?.officialUrl || '#',
+            price: tool.details?.pricing?.hasFree
+              ? '無料版あり'
+              : tool.details?.pricing?.paidPlans?.[0]?.price || '価格情報なし',
+            features: tool.details?.features || [],
+            pros: tool.details?.pros || [],
+            cons: tool.details?.cons || []
+          })),
+          comparison,
+          recommendation
+        }
+      ]);
 
       if (stepInterval) {
         clearInterval(stepInterval);
       }
-
-      // タスクグループを設定
-      setTaskGroups(taskBreakdown.map((task: any) => ({
-        task: task.task,
-        description: task.description,
-        tools: task.recommendedTools.map((tool: any) => ({
-          name: tool.name,
-          description: tool.reason,
-          url: tool.details?.officialUrl || '#',
-          price: tool.details?.pricing?.hasFree 
-            ? '無料版あり' 
-            : tool.details?.pricing?.paidPlans?.[0]?.price || '価格情報なし',
-          features: tool.details?.features || [],
-          pros: tool.details?.pros || [],
-          cons: tool.details?.cons || []
-        }))
-      })));
-
     } catch (err) {
       if (stepInterval) {
         clearInterval(stepInterval);
       }
-      const errorMessage = err instanceof Error 
-        ? err.message 
+      const errorMessage = err instanceof Error
+        ? err.message
         : '検索中にエラーが発生しました。もう一度お試しください。';
       setError(errorMessage);
       setTaskGroups([]);

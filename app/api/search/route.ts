@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { searchTools } from '@/lib/search';
-import { generateToolDescription } from '@/lib/llm/generator';
 
 export async function POST(request: Request) {
   try {
@@ -14,13 +13,9 @@ export async function POST(request: Request) {
     }
 
     const tools = searchTools(query);
-    const descriptions = await Promise.all(
-      tools.slice(0, 3).map(tool => generateToolDescription(query, tool))
-    );
 
     return NextResponse.json({
-      tools: tools.slice(0, 3),
-      descriptions
+      tools: tools.slice(0, 3)
     });
   } catch (error) {
     console.error('Search error:', error);

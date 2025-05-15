@@ -1,7 +1,8 @@
 /**
- * AIツールのインターフェース定義
- * @interface AITool
+ * AIツールの型定義
+ * @module types/ai-tool
  */
+
 export interface AITool {
   id: string;
   name: string;
@@ -11,14 +12,14 @@ export interface AITool {
   features: string[];
   useCases: string[];
   pricing: {
-    hasFree: boolean;
-    freeFeatures: string[];
-    paidPlans: {
-      name: string;
-      price: string;
-      billingCycle: string;
-      features: string[];
-    }[];
+    hasFree?: boolean;
+    freeFeatures?: string[];
+    paidPlans?: Array<{
+      name?: string;
+      price?: string;
+      billingCycle?: string;
+      features?: string[];
+    }>;
   };
   officialUrl: string;
   apiAvailable: boolean;
